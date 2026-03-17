@@ -87,6 +87,7 @@ function injectTitleBar(win) {
       bar.innerHTML = \`
         <div class="ftb-drag">
           <div class="ftb-icon">${logoSvg}</div>
+          <span class="ftb-title">Faktur</span>
         </div>
         <div class="ftb-controls">
           <button class="ftb-btn ftb-minimize" onclick="window.fakturApp.minimize()">
@@ -134,6 +135,14 @@ function injectTitleBar(win) {
           width: 22px;
           height: 22px;
         }
+        .ftb-title {
+          font-family: 'Lexend', system-ui, sans-serif;
+          font-size: 13px;
+          font-weight: 500;
+          color: #a1a1aa;
+          margin-left: 8px;
+          pointer-events: none;
+        }
         .ftb-controls {
           display: flex;
           height: 100%;
@@ -159,8 +168,22 @@ function injectTitleBar(win) {
           background: #ef4444;
           color: white;
         }
+        html, body {
+          margin-top: 0 !important;
+          padding-top: 0 !important;
+        }
+        html {
+          overflow: hidden !important;
+          height: 100vh !important;
+        }
         body {
+          overflow: auto !important;
+          height: 100vh !important;
           padding-top: 36px !important;
+          box-sizing: border-box !important;
+        }
+        body > *:not(#faktur-titlebar):not(style) {
+          max-height: calc(100vh - 36px);
         }
       \`;
 
