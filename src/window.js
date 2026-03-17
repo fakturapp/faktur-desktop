@@ -48,9 +48,14 @@ function createMainWindow(url, icon) {
     if (mainWindow) mainWindow.close();
   });
 
-  // Ouvrir les liens externes dans le navigateur par défaut
+  // Gérer les ouvertures de fenêtres depuis la webview
   mainWindow.webContents.on('did-attach-webview', (event, webContents) => {
     webContents.setWindowOpenHandler(({ url: linkUrl }) => {
+      // Bloquer les blob:// URLs (le download est déjà géré par will-download)
+      if (linkUrl.startsWith('blob:')) {
+        return { action: 'deny' };
+      }
+      // Ouvrir les liens externes dans le navigateur par défaut
       if (!linkUrl.startsWith(url)) {
         shell.openExternal(linkUrl);
         return { action: 'deny' };

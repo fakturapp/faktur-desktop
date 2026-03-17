@@ -2,13 +2,13 @@ const { dialog, BrowserWindow, session } = require('electron');
 const path = require('path');
 
 let downloadWindow = null;
+let dialogOpen = false;
 
 const DL_WIDTH = parseInt(process.env.DOWNLOAD_WINDOW_WIDTH) || 420;
 const DL_HEIGHT = parseInt(process.env.DOWNLOAD_WINDOW_HEIGHT) || 220;
 
 function createDownloadWindow(parentWindow) {
-  // Fermer l'ancienne fenêtre si elle existe encore
-  if (downloadWindow) {
+  if (downloadWindow && !downloadWindow.isDestroyed()) {
     downloadWindow.destroy();
     downloadWindow = null;
   }
@@ -34,7 +34,7 @@ function createDownloadWindow(parentWindow) {
   downloadWindow.loadFile(path.join(__dirname, '..', 'public', 'download.html'));
 
   downloadWindow.once('ready-to-show', () => {
-    if (downloadWindow) downloadWindow.show();
+    if (downloadWindow && !downloadWindow.isDestroyed()) downloadWindow.show();
   });
 
   downloadWindow.on('closed', () => {
@@ -45,18 +45,26 @@ function createDownloadWindow(parentWindow) {
 }
 
 function setupDownloadManager(mainWindow) {
-  // Écouter sur la session de la webview (persist:faktur)
   const webviewSession = session.fromPartition('persist:faktur');
+
   webviewSession.on('will-download', (event, item, webContents) => {
+    // Si un dialog est déjà ouvert, annuler ce download (doublon blob://)
+    if (dialogOpen) {
+      item.cancel();
+      return;
+    }
+
     const defaultFilename = item.getFilename();
 
-    // IMPORTANT : mettre en pause immédiatement avant le dialog
     item.pause();
+    dialogOpen = true;
 
     dialog.showSaveDialog(mainWindow, {
       defaultPath: defaultFilename,
       filters: getFiltersForFilename(defaultFilename)
     }).then(({ canceled, filePath }) => {
+      dialogOpen = false;
+
       if (canceled || !filePath) {
         item.cancel();
         return;
@@ -69,6 +77,7 @@ function setupDownloadManager(mainWindow) {
       const dlWindow = createDownloadWindow(mainWindow);
       let windowReady = false;
       let pendingUpdates = [];
+      let finalResult = null; // Stocker le résultat si download finit avant la fenêtre
 
       dlWindow.webContents.once('did-finish-load', () => {
         windowReady = true;
@@ -83,15 +92,18 @@ function setupDownloadManager(mainWindow) {
           dlWindow.webContents.send('download-progress', update);
         }
         pendingUpdates = [];
+
+        // Si le download a déjà fini avant que la fenêtre soit prête
+        if (finalResult) {
+          sendFinalResult(finalResult.state, filename, filePath);
+        }
       });
 
       item.on('updated', (event, state) => {
         if (state === 'progressing') {
           const received = item.getReceivedBytes();
           const total = item.getTotalBytes();
-          // Si total inconnu (0), on indique -1 pour mode indéterminé
           const percent = total > 0 ? Math.round((received / total) * 100) : -1;
-
           const update = { percent, received, total, filename };
 
           if (windowReady && downloadWindow && !downloadWindow.isDestroyed()) {
@@ -107,25 +119,33 @@ function setupDownloadManager(mainWindow) {
       item.once('done', (event, state) => {
         mainWindow.setProgressBar(-1);
 
-        if (downloadWindow && !downloadWindow.isDestroyed()) {
-          if (state === 'completed') {
-            downloadWindow.webContents.send('download-complete', { filename, path: filePath });
-            setTimeout(() => {
-              if (downloadWindow && !downloadWindow.isDestroyed()) downloadWindow.close();
-            }, 1500);
-          } else {
-            downloadWindow.webContents.send('download-error', { filename, state });
-            setTimeout(() => {
-              if (downloadWindow && !downloadWindow.isDestroyed()) downloadWindow.close();
-            }, 3000);
-          }
+        if (windowReady && downloadWindow && !downloadWindow.isDestroyed()) {
+          sendFinalResult(state, filename, filePath);
+        } else {
+          // La fenêtre n'est pas encore prête, stocker le résultat
+          finalResult = { state };
         }
       });
 
-      // Reprendre le téléchargement maintenant que tout est prêt
       item.resume();
     });
   });
+
+  function sendFinalResult(state, filename, filePath) {
+    if (!downloadWindow || downloadWindow.isDestroyed()) return;
+
+    if (state === 'completed') {
+      downloadWindow.webContents.send('download-complete', { filename, path: filePath });
+      setTimeout(() => {
+        if (downloadWindow && !downloadWindow.isDestroyed()) downloadWindow.close();
+      }, 1500);
+    } else {
+      downloadWindow.webContents.send('download-error', { filename, state });
+      setTimeout(() => {
+        if (downloadWindow && !downloadWindow.isDestroyed()) downloadWindow.close();
+      }, 3000);
+    }
+  }
 }
 
 function getFiltersForFilename(filename) {
