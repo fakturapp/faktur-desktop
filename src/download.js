@@ -1,4 +1,4 @@
-const { dialog, BrowserWindow } = require('electron');
+const { dialog, BrowserWindow, session } = require('electron');
 const path = require('path');
 
 let downloadWindow = null;
@@ -45,7 +45,9 @@ function createDownloadWindow(parentWindow) {
 }
 
 function setupDownloadManager(mainWindow) {
-  mainWindow.webContents.session.on('will-download', (event, item, webContents) => {
+  // Écouter sur la session de la webview (persist:faktur)
+  const webviewSession = session.fromPartition('persist:faktur');
+  webviewSession.on('will-download', (event, item, webContents) => {
     const defaultFilename = item.getFilename();
 
     // IMPORTANT : mettre en pause immédiatement avant le dialog
