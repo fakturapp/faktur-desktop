@@ -74,6 +74,16 @@ body {
   transition: width 0.3s ease;
 }
 
+.progress-fill.indeterminate {
+  width: 40%;
+  animation: indeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
 .progress-info {
   display: flex;
   justify-content: space-between;

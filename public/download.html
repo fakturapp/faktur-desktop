@@ -64,10 +64,19 @@
 
     window.fakturDownload.onProgress((data) => {
       filenameEl.textContent = data.filename;
-      progressFill.style.width = data.percent + '%';
-      percentEl.textContent = data.percent + '%';
-      if (data.total > 0) {
-        sizeEl.textContent = formatBytes(data.received) + ' / ' + formatBytes(data.total);
+
+      if (data.percent === -1) {
+        // Taille totale inconnue : mode indéterminé
+        progressFill.classList.add('indeterminate');
+        percentEl.textContent = '';
+        sizeEl.textContent = formatBytes(data.received);
+      } else {
+        progressFill.classList.remove('indeterminate');
+        progressFill.style.width = data.percent + '%';
+        percentEl.textContent = data.percent + '%';
+        if (data.total > 0) {
+          sizeEl.textContent = formatBytes(data.received) + ' / ' + formatBytes(data.total);
+        }
       }
     });
 
