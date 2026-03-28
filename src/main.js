@@ -6,6 +6,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const { createMainWindow, getMainWindow } = require('./window');
 const { setupDownloadManager } = require('./download');
+const { setupCredentialsManager } = require('./credentials');
 
 const FAKTUR_URL = process.env.FAKTUR_URL || 'https://dash.fakturapp.cc';
 
@@ -23,6 +24,7 @@ app.whenReady().then(() => {
 
   const mainWindow = createMainWindow(FAKTUR_URL, appIcon);
   setupDownloadManager(mainWindow);
+  setupCredentialsManager();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
