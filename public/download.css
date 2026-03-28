@@ -33,6 +33,28 @@ body {
   gap: 10px;
 }
 
+.close-btn {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+
+.close-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
 .icon {
   flex-shrink: 0;
 }
