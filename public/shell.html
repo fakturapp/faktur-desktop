@@ -377,6 +377,44 @@
         <button class="btn-dismiss" id="pw-dismiss">Non</button>
       </div>
     </div>
+
+    <!-- Download bubble (draggable) -->
+    <div id="dl-bubble">
+      <button id="dl-bubble-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M12 3v12M12 15l-4-4M12 15l4-4"/>
+          <path d="M5 20h14"/>
+        </svg>
+        <span class="badge" id="dl-badge">0</span>
+        <svg class="progress-ring" viewBox="0 0 48 48">
+          <circle class="ring-bg" cx="24" cy="24" r="21"/>
+          <circle class="ring-fill" id="dl-ring" cx="24" cy="24" r="21"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Download panel -->
+    <div id="dl-panel">
+      <div class="dl-panel-header">
+        <span>Téléchargements</span>
+        <div class="actions">
+          <button title="Effacer l'historique" id="dl-clear">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+            </svg>
+          </button>
+          <button title="Fermer" id="dl-panel-close">
+            <svg width="11" height="11" viewBox="0 0 12 12">
+              <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="dl-panel-list" id="dl-list">
+        <div class="dl-empty">Aucun téléchargement</div>
+      </div>
+    </div>
   </div>
 
   <script>
