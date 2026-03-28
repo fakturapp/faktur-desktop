@@ -424,6 +424,87 @@
     const sitePreload = window.fakturShell.getSitePreloadPath();
     webview.setAttribute('preload', sitePreload);
     webview.setAttribute('src', url);
+
+    /* ═══════════════════════════════════════════
+       ERROR HANDLING + TIMEOUT
+       Le timeout ne se déclenche QUE si le serveur
+       ne répond pas du tout. Dès qu'on reçoit une
+       réponse (did-navigate), on annule le timer.
+       ═══════════════════════════════════════════ */
+    const errorOverlay = document.getElementById('error-overlay');
+    const errorMessage = document.getElementById('error-message');
+    const retryBtn = document.getElementById('retry-btn');
+    let loadTimeout = null;
+    let serverResponded = false;
+
+    function startLoadTimeout() {
+      clearTimeout(loadTimeout);
+      serverResponded = false;
+      loadTimeout = setTimeout(() => {
+        if (!serverResponded && !errorOverlay.classList.contains('visible')) {
+          errorOverlay.classList.add('visible');
+          errorMessage.textContent = 'Le serveur met trop de temps à répondre.';
+        }
+      }, 5000);
+    }
+
+    // Start timeout on initial load
+    startLoadTimeout();
+
+    // Le serveur a répondu → annuler le timeout immédiatement
+    webview.addEventListener('did-navigate', () => {
+      serverResponded = true;
+      clearTimeout(loadTimeout);
+    });
+    webview.addEventListener('did-navigate-in-page', () => {
+      serverResponded = true;
+      clearTimeout(loadTimeout);
+    });
+    webview.addEventListener('dom-ready', () => {
+      serverResponded = true;
+      clearTimeout(loadTimeout);
+    });
+
+    // Page chargée avec succès
+    webview.addEventListener('did-finish-load', () => {
+      serverResponded = true;
+      clearTimeout(loadTimeout);
+      errorOverlay.classList.remove('visible');
+    });
+
+    // Chargement terminé (succès ou échec)
+    webview.addEventListener('did-stop-loading', () => {
+      clearTimeout(loadTimeout);
+    });
+
+    // Vrai échec de chargement
+    webview.addEventListener('did-fail-load', (e) => {
+      clearTimeout(loadTimeout);
+      if (e.errorCode === -3) return; // navigation annulée, ignorer
+      errorOverlay.classList.add('visible');
+      const messages = {
+        '-2': 'Impossible de se connecter au serveur.',
+        '-6': 'Adresse introuvable.',
+        '-7': 'Délai de connexion dépassé.',
+        '-21': 'Connexion réseau perdue.',
+        '-100': 'Connexion au serveur refusée.',
+        '-101': 'Connexion réseau refusée.',
+        '-102': 'La connexion a été interrompue.',
+        '-105': 'Impossible de résoudre le nom du serveur.',
+        '-106': 'Pas de connexion internet.',
+        '-118': 'Délai de connexion dépassé.',
+        '-200': 'Certificat de sécurité invalide.',
+        '-201': 'Certificat de sécurité expiré.',
+      };
+      errorMessage.textContent = messages[String(e.errorCode)]
+        || 'Vérifiez votre connexion internet et réessayez.';
+    });
+
+    retryBtn.addEventListener('click', () => {
+      errorOverlay.classList.remove('visible');
+      startLoadTimeout();
+      webview.reload();
+    });
   </script>
 </body>
 </html>
