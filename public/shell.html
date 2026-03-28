@@ -673,6 +673,69 @@
     window.fakturShell.getDownloadHistory().then(h => {
       downloadHistory = h || [];
     });
+
+    /* ── Download events ── */
+    window.fakturShell.onDownloadStart((data) => {
+      clearTimeout(hideTimer);
+      activeDownloads.set(data.id, { ...data, percent: 0, received: 0 });
+      dlBubble.classList.add('visible');
+      updateBadge();
+      if (panelOpen) renderList();
+    });
+
+    window.fakturShell.onDownloadProgress((data) => {
+      const dl = activeDownloads.get(data.id);
+      if (dl) { dl.percent = data.percent; dl.received = data.received; dl.total = data.total; }
+      updateRing();
+      if (panelOpen) renderList();
+    });
+
+    window.fakturShell.onDownloadComplete((data) => {
+      activeDownloads.delete(data.id);
+      downloadHistory.unshift({
+        id: data.id, filename: data.filename,
+        path: data.path, size: data.size,
+        state: 'completed', date: new Date().toISOString()
+      });
+      updateBadge(); updateRing();
+      if (panelOpen) renderList();
+      scheduleHide();
+    });
+
+    window.fakturShell.onDownloadError((data) => {
+      activeDownloads.delete(data.id);
+      downloadHistory.unshift({
+        id: data.id, filename: data.filename,
+        state: 'failed', date: new Date().toISOString()
+      });
+      updateBadge(); updateRing();
+      if (panelOpen) renderList();
+      scheduleHide();
+    });
+
+    function scheduleHide() {
+      if (activeDownloads.size > 0 || panelOpen) return;
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        if (activeDownloads.size === 0 && !panelOpen) dlBubble.classList.remove('visible');
+      }, 5000);
+    }
+
+    function updateBadge() {
+      const n = activeDownloads.size;
+      dlBadge.textContent = n;
+      dlBadge.classList.toggle('visible', n > 0);
+    }
+
+    function updateRing() {
+      if (activeDownloads.size === 0) { dlRing.style.strokeDashoffset = RING_C; return; }
+      let sum = 0, count = 0;
+      for (const dl of activeDownloads.values()) {
+        if (dl.percent >= 0) { sum += dl.percent; count++; }
+      }
+      const avg = count > 0 ? sum / count : 0;
+      dlRing.style.strokeDashoffset = RING_C - (avg / 100) * RING_C;
+    }
   </script>
 </body>
 </html>
