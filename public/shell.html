@@ -505,6 +505,49 @@
       startLoadTimeout();
       webview.reload();
     });
+
+    /* ═══════════════════════════════════════════
+       PASSWORD SAVE BAR
+       ═══════════════════════════════════════════ */
+    const pwBar = document.getElementById('pw-bar');
+    const pwUser = document.getElementById('pw-user');
+    const pwSave = document.getElementById('pw-save');
+    const pwDismiss = document.getElementById('pw-dismiss');
+    let pendingCredentials = null;
+
+    webview.addEventListener('ipc-message', async (e) => {
+      if (e.channel === 'password-submit') {
+        const data = e.args[0];
+        if (!data) return;
+        // Check if we already have these exact credentials saved
+        const existing = await window.fakturShell.getCredentials(data.url);
+        if (existing && existing.username === data.username && existing.password === data.password) return;
+        pendingCredentials = data;
+        pwUser.textContent = data.username;
+        pwBar.classList.add('visible');
+        // Auto-hide after 15s
+        setTimeout(() => { if (pwBar.classList.contains('visible')) pwBar.classList.remove('visible'); }, 15000);
+      }
+      if (e.channel === 'request-credentials') {
+        const data = e.args[0];
+        if (!data) return;
+        const creds = await window.fakturShell.getCredentials(data.url);
+        if (creds) webview.send('fill-credentials', creds);
+      }
+    });
+
+    pwSave.addEventListener('click', async () => {
+      if (pendingCredentials) {
+        await window.fakturShell.saveCredentials(pendingCredentials);
+        pendingCredentials = null;
+      }
+      pwBar.classList.remove('visible');
+    });
+
+    pwDismiss.addEventListener('click', () => {
+      pendingCredentials = null;
+      pwBar.classList.remove('visible');
+    });
   </script>
 </body>
 </html>
