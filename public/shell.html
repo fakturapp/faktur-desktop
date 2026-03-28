@@ -131,22 +131,12 @@
       max-width: 360px;
       line-height: 1.5;
     }
-    #error-overlay button {
-      margin-top: 8px;
-      padding: 10px 28px;
-      border: none;
-      border-radius: 8px;
-      background: #6366f1;
-      color: white;
-      font-family: 'Lexend', system-ui, sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s;
+    #error-overlay .retry-btn {
+      margin-top: 8px; padding: 10px 28px; border: none; border-radius: 8px;
+      background: #5b6eea; color: white; font-family: inherit; font-size: 13px;
+      font-weight: 500; cursor: pointer; transition: background 0.15s;
     }
-    #error-overlay button:hover {
-      background: #4f46e5;
-    }
+    #error-overlay .retry-btn:hover { background: #4c5fdb; }
 
     /* Password save bar */
     #pw-bar {
@@ -194,11 +184,11 @@
       transition: background 0.15s;
     }
     #pw-bar .btn-save {
-      background: #6366f1;
+      background: #5b6eea;
       color: white;
     }
     #pw-bar .btn-save:hover {
-      background: #4f46e5;
+      background: #4c5fdb;
     }
     #pw-bar .btn-dismiss {
       background: rgba(255,255,255,0.06);
@@ -220,16 +210,16 @@
     #dl-bubble.dragging { transition: none; }
     #dl-bubble-btn {
       width: 42px; height: 42px; border-radius: 50%; border: none;
-      background: #6366f1; color: white; cursor: pointer;
+      background: #5b6eea; color: white; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       position: relative;
-      box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+      box-shadow: 0 4px 16px rgba(91,110,234,0.35);
       transition: transform 0.15s, box-shadow 0.15s;
     }
     #dl-bubble.dragging #dl-bubble-btn { cursor: grabbing; transform: scale(1.05); }
     #dl-bubble-btn:hover {
       transform: scale(1.08);
-      box-shadow: 0 6px 20px rgba(99,102,241,0.5);
+      box-shadow: 0 6px 20px rgba(91,110,234,0.5);
     }
     .badge {
       position: absolute; top: -4px; right: -4px;
@@ -286,9 +276,9 @@
       width: 28px; height: 28px; border-radius: 7px;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .dl-icon.completed { background: rgba(99,102,241,0.12); color: #818cf8; }
+    .dl-icon.completed { background: rgba(91,110,234,0.12); color: #93a3f8; }
     .dl-icon.failed { background: rgba(239,68,68,0.12); color: #f87171; }
-    .dl-icon.active { background: rgba(99,102,241,0.12); color: #818cf8; }
+    .dl-icon.active { background: rgba(91,110,234,0.12); color: #93a3f8; }
     .dl-info { flex: 1; min-width: 0; }
     .dl-name {
       font-size: 11px; font-weight: 400; color: #e4e4e7;
@@ -301,7 +291,7 @@
     }
     .dl-progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, #6366f1, #818cf8);
+      background: linear-gradient(90deg, #5b6eea, #7b8ef5);
       border-radius: 2px; transition: width 0.3s ease;
     }
     .dl-item-actions {
