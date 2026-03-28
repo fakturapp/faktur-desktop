@@ -736,6 +736,91 @@
       const avg = count > 0 ? sum / count : 0;
       dlRing.style.strokeDashoffset = RING_C - (avg / 100) * RING_C;
     }
+
+    function formatBytes(b) {
+      if (!b || b <= 0) return '';
+      const k = 1024, s = ['o','Ko','Mo','Go'];
+      const i = Math.floor(Math.log(b) / Math.log(k));
+      return parseFloat((b / Math.pow(k, i)).toFixed(1)) + ' ' + s[i];
+    }
+
+    function formatDate(iso) {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })
+          + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      } catch { return ''; }
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function renderList() {
+      const items = [];
+
+      for (const [id, dl] of activeDownloads) {
+        const pct = dl.percent >= 0 ? dl.percent : 0;
+        const sz = dl.total > 0
+          ? formatBytes(dl.received) + ' / ' + formatBytes(dl.total)
+          : formatBytes(dl.received);
+        items.push(`
+          <div class="dl-item">
+            <div class="dl-icon active">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <path d="M12 3v12M12 15l-4-4M12 15l4-4"/>
+              </svg>
+            </div>
+            <div class="dl-info">
+              <div class="dl-name">${esc(dl.filename)}</div>
+              <div class="dl-meta">${pct}% &middot; ${sz}</div>
+              <div class="dl-progress-bar"><div class="dl-progress-fill" style="width:${pct}%"></div></div>
+            </div>
+          </div>
+        `);
+      }
+
+      for (const entry of downloadHistory) {
+        if (activeDownloads.has(entry.id)) continue;
+        const ok = entry.state === 'completed';
+        const icon = ok
+          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>'
+          : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
+        const meta = (ok ? 'Terminé' : 'Échoué')
+          + (entry.size ? ' &middot; ' + formatBytes(entry.size) : '')
+          + ' &middot; ' + formatDate(entry.date);
+        const actions = ok && entry.path
+          ? `<div class="dl-item-actions">
+               <button title="Ouvrir le dossier" data-folder="${esc(entry.path)}">
+                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                   <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                 </svg>
+               </button>
+             </div>` : '';
+        items.push(`
+          <div class="dl-item">
+            <div class="dl-icon ${entry.state}">${icon}</div>
+            <div class="dl-info">
+              <div class="dl-name">${esc(entry.filename)}</div>
+              <div class="dl-meta">${meta}</div>
+            </div>
+            ${actions}
+          </div>
+        `);
+      }
+
+      dlList.innerHTML = items.length > 0
+        ? items.join('')
+        : '<div class="dl-empty">Aucun téléchargement</div>';
+    }
+
+    // Delegate clicks for folder buttons
+    dlList.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-folder]');
+      if (btn) window.fakturShell.openDownloadFolder(btn.dataset.folder);
+    });
   </script>
 </body>
 </html>
