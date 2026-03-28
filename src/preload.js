@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('fakturShell', {
   maximize: () => ipcRenderer.send('window-maximize'),
   close: () => ipcRenderer.send('window-close'),
   getURL: () => ipcRenderer.sendSync('get-faktur-url'),
+  getSitePreloadPath: () => ipcRenderer.sendSync('get-site-preload-path'),
 
   // Download events
   onDownloadStart: (cb) => ipcRenderer.on('download-start', (_, d) => cb(d)),
@@ -18,5 +19,9 @@ contextBridge.exposeInMainWorld('fakturShell', {
 
   // File operations
   openDownloadFile: (p) => ipcRenderer.send('open-download-file', p),
-  openDownloadFolder: (p) => ipcRenderer.send('open-download-folder', p)
+  openDownloadFolder: (p) => ipcRenderer.send('open-download-folder', p),
+
+  // Credentials
+  saveCredentials: (data) => ipcRenderer.invoke('save-credentials', data),
+  getCredentials: (url) => ipcRenderer.invoke('get-credentials', url)
 });
