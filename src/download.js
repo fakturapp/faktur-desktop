@@ -1,7 +1,42 @@
 const { dialog, session, ipcMain, app, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
+
+const historyPath = path.join(app.getPath('userData'), 'download-history.json');
+
+function loadHistory() {
+  try {
+    if (fs.existsSync(historyPath)) {
+      return JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+    }
+  } catch (e) { /* ignore */ }
+  return [];
+}
+
+function saveHistory(history) {
+  try {
+    fs.writeFileSync(historyPath, JSON.stringify(history));
+  } catch (e) { /* ignore */ }
+}
 
 function setupDownloadManager(mainWindow) {
+  let downloadHistory = loadHistory();
+
+  ipcMain.handle('get-download-history', () => downloadHistory);
+
+  ipcMain.on('clear-download-history', () => {
+    downloadHistory = [];
+    saveHistory(downloadHistory);
+  });
+
+  ipcMain.on('open-download-file', (_, filePath) => {
+    shell.openPath(filePath);
+  });
+
+  ipcMain.on('open-download-folder', (_, filePath) => {
+    shell.showItemInFolder(filePath);
+  });
+
   const webviewSession = session.fromPartition('persist:faktur');
 
   webviewSession.on('will-download', (event, item, webContents) => {
@@ -51,7 +86,22 @@ function setupDownloadManager(mainWindow) {
     item.once('done', (event, state) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.setProgressBar(-1);
+      }
 
+      const entry = {
+        id: downloadId,
+        filename,
+        path: filePath,
+        size: item.getTotalBytes(),
+        date: new Date().toISOString(),
+        state: state === 'completed' ? 'completed' : 'failed'
+      };
+
+      downloadHistory.unshift(entry);
+      if (downloadHistory.length > 50) downloadHistory = downloadHistory.slice(0, 50);
+      saveHistory(downloadHistory);
+
+      if (mainWindow && !mainWindow.isDestroyed()) {
         if (state === 'completed') {
           mainWindow.webContents.send('download-complete', {
             id: downloadId,
