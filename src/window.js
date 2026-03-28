@@ -35,6 +35,11 @@ function createMainWindow(url, icon) {
     event.returnValue = url;
   });
 
+  // Renvoyer le chemin du preload webview
+  ipcMain.on('get-site-preload-path', (event) => {
+    event.returnValue = 'file:///' + path.join(__dirname, 'preload-site.js').replace(/\\/g, '/');
+  });
+
   // IPC pour les contrôles de fenêtre
   ipcMain.on('window-minimize', () => {
     if (mainWindow) mainWindow.minimize();
