@@ -93,44 +93,16 @@
       background: #09090b;
     }
 
-    /* Error overlay */
+    /* ── Error overlay ── */
     #error-overlay {
-      display: none;
-      position: absolute;
-      inset: 0;
-      background: #09090b;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      z-index: 100;
-      color: #fafafa;
-      text-align: center;
-      padding: 32px;
+      position: absolute; inset: 0; background: #09090b;
+      display: none; flex-direction: column; align-items: center;
+      justify-content: center; gap: 16px; z-index: 100;
     }
     #error-overlay.visible { display: flex; }
-    #error-overlay .error-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: rgba(239,68,68,0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 4px;
-    }
-    #error-overlay h2 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #fafafa;
-    }
-    #error-overlay p {
-      font-size: 13px;
-      font-weight: 300;
-      color: #71717a;
-      max-width: 360px;
-      line-height: 1.5;
-    }
+    #error-overlay .error-icon { color: #ef4444; }
+    #error-overlay h2 { font-size: 18px; font-weight: 500; color: #fafafa; }
+    #error-overlay p { font-size: 13px; color: #71717a; max-width: 340px; text-align: center; line-height: 1.5; }
     #error-overlay .retry-btn {
       margin-top: 8px; padding: 10px 28px; border: none; border-radius: 8px;
       background: #5b6eea; color: white; font-family: inherit; font-size: 13px;
@@ -138,66 +110,29 @@
     }
     #error-overlay .retry-btn:hover { background: #4c5fdb; }
 
-    /* Password save bar */
+    /* ── Password save bar ── */
     #pw-bar {
-      display: none;
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 48px;
-      background: #18181b;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      align-items: center;
-      padding: 0 16px;
-      gap: 12px;
-      z-index: 100;
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 42px; background: #1e1b4b;
+      display: none; align-items: center; gap: 10px;
+      padding: 0 16px; z-index: 60;
+      border-bottom: 1px solid rgba(99,102,241,0.2);
+      font-size: 12px; color: #e4e4e7;
     }
     #pw-bar.visible { display: flex; }
-    #pw-bar .lock-icon {
-      color: #a1a1aa;
-      flex-shrink: 0;
-    }
-    #pw-bar .pw-text {
-      flex: 1;
-      font-size: 13px;
-      font-weight: 400;
-      color: #d4d4d8;
-    }
-    #pw-bar .pw-text strong {
-      font-weight: 600;
-      color: #fafafa;
-    }
-    #pw-bar .pw-actions {
-      display: flex;
-      gap: 8px;
-      flex-shrink: 0;
-    }
+    #pw-bar .pw-icon { color: #818cf8; flex-shrink: 0; }
+    #pw-bar .pw-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #pw-bar .pw-text strong { color: #c7d2fe; font-weight: 500; }
+    #pw-bar .pw-actions { display: flex; gap: 6px; flex-shrink: 0; }
     #pw-bar .pw-actions button {
-      padding: 6px 16px;
-      border: none;
-      border-radius: 6px;
-      font-family: 'Lexend', system-ui, sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
+      border: none; border-radius: 6px; font-family: inherit;
+      font-size: 11px; font-weight: 500; cursor: pointer; padding: 6px 14px;
       transition: background 0.15s;
     }
-    #pw-bar .btn-save {
-      background: #5b6eea;
-      color: white;
-    }
-    #pw-bar .btn-save:hover {
-      background: #4c5fdb;
-    }
-    #pw-bar .btn-dismiss {
-      background: rgba(255,255,255,0.06);
-      color: #a1a1aa;
-    }
-    #pw-bar .btn-dismiss:hover {
-      background: rgba(255,255,255,0.12);
-      color: #fafafa;
-    }
+    #pw-bar .pw-save { background: #5b6eea; color: white; }
+    #pw-bar .pw-save:hover { background: #4c5fdb; }
+    #pw-bar .pw-dismiss { background: rgba(255,255,255,0.08); color: #a1a1aa; }
+    #pw-bar .pw-dismiss:hover { background: rgba(255,255,255,0.12); color: #fafafa; }
 
     /* Download bubble */
     #dl-bubble {
