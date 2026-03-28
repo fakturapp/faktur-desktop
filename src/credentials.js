@@ -1,4 +1,4 @@
-const { safeStorage, app } = require('electron');
+const { safeStorage, ipcMain, app } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -32,4 +32,24 @@ function saveCredentialsToDisk(credentials) {
   } catch { /* ignore */ }
 }
 
-module.exports = { loadCredentials, saveCredentialsToDisk };
+function setupCredentialsManager() {
+  let credentials = loadCredentials();
+
+  ipcMain.handle('save-credentials', (_, data) => {
+    const idx = credentials.findIndex(c => c.url === data.url && c.username === data.username);
+    if (idx >= 0) {
+      credentials[idx].password = data.password;
+    } else {
+      credentials.push({ url: data.url, username: data.username, password: data.password });
+    }
+    saveCredentialsToDisk(credentials);
+    return true;
+  });
+
+  ipcMain.handle('get-credentials', (_, url) => {
+    const found = credentials.find(c => c.url === url);
+    return found ? { username: found.username, password: found.password } : null;
+  });
+}
+
+module.exports = { setupCredentialsManager };
