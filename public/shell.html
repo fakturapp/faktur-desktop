@@ -548,6 +548,131 @@
       pendingCredentials = null;
       pwBar.classList.remove('visible');
     });
+
+    /* ═══════════════════════════════════════════
+       DOWNLOAD BUBBLE (DRAGGABLE)
+       ═══════════════════════════════════════════ */
+    const dlBubble = document.getElementById('dl-bubble');
+    const dlBubbleBtn = document.getElementById('dl-bubble-btn');
+    const dlBadge = document.getElementById('dl-badge');
+    const dlRing = document.getElementById('dl-ring');
+    const dlPanel = document.getElementById('dl-panel');
+    const dlList = document.getElementById('dl-list');
+    const dlClear = document.getElementById('dl-clear');
+    const dlPanelClose = document.getElementById('dl-panel-close');
+
+    const RING_C = 2 * Math.PI * 21;
+    let activeDownloads = new Map();
+    let downloadHistory = [];
+    let panelOpen = false;
+    let hideTimer = null;
+
+    // Drag state
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
+    let bubbleStartX = 0, bubbleStartY = 0;
+
+    // Restore saved bubble position
+    function restoreBubblePosition() {
+      const saved = localStorage.getItem('dl-bubble-pos');
+      if (!saved) return;
+      try {
+        const { xPct, yPct } = JSON.parse(saved);
+        const cr = content.getBoundingClientRect();
+        const x = Math.max(0, Math.min(xPct * cr.width, cr.width - 50));
+        const y = Math.max(0, Math.min(yPct * cr.height, cr.height - 50));
+        dlBubble.style.left = x + 'px';
+        dlBubble.style.top = y + 'px';
+        dlBubble.style.right = 'auto';
+        dlBubble.style.bottom = 'auto';
+      } catch { /* ignore */ }
+    }
+    restoreBubblePosition();
+
+    // Drag handlers
+    dlBubbleBtn.addEventListener('pointerdown', (e) => {
+      isDragging = false;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      const rect = dlBubble.getBoundingClientRect();
+      const cr = content.getBoundingClientRect();
+      bubbleStartX = rect.left - cr.left;
+      bubbleStartY = rect.top - cr.top;
+      dlBubbleBtn.setPointerCapture(e.pointerId);
+
+      const onMove = (e) => {
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        if (!isDragging && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+          isDragging = true;
+          dlBubble.classList.add('dragging');
+        }
+        if (isDragging) {
+          const cr = content.getBoundingClientRect();
+          const x = Math.max(0, Math.min(bubbleStartX + dx, cr.width - 50));
+          const y = Math.max(0, Math.min(bubbleStartY + dy, cr.height - 50));
+          dlBubble.style.left = x + 'px';
+          dlBubble.style.top = y + 'px';
+          dlBubble.style.right = 'auto';
+          dlBubble.style.bottom = 'auto';
+        }
+      };
+
+      const onUp = () => {
+        dlBubbleBtn.removeEventListener('pointermove', onMove);
+        dlBubbleBtn.removeEventListener('pointerup', onUp);
+        if (isDragging) {
+          dlBubble.classList.remove('dragging');
+          // Save position as percentages
+          const cr = content.getBoundingClientRect();
+          const rect = dlBubble.getBoundingClientRect();
+          localStorage.setItem('dl-bubble-pos', JSON.stringify({
+            xPct: (rect.left - cr.left) / cr.width,
+            yPct: (rect.top - cr.top) / cr.height
+          }));
+        }
+      };
+
+      dlBubbleBtn.addEventListener('pointermove', onMove);
+      dlBubbleBtn.addEventListener('pointerup', onUp);
+    });
+
+    // Click toggles panel (only if not dragging)
+    dlBubbleBtn.addEventListener('click', (e) => {
+      if (isDragging) { isDragging = false; return; }
+      panelOpen = !panelOpen;
+      dlPanel.classList.toggle('visible', panelOpen);
+      if (panelOpen) renderList();
+    });
+
+    dlPanelClose.addEventListener('click', () => {
+      panelOpen = false;
+      dlPanel.classList.remove('visible');
+    });
+
+    dlClear.addEventListener('click', () => {
+      downloadHistory = [];
+      window.fakturShell.clearDownloadHistory();
+      renderList();
+      if (activeDownloads.size === 0) {
+        dlBubble.classList.remove('visible');
+        panelOpen = false;
+        dlPanel.classList.remove('visible');
+      }
+    });
+
+    // Click outside panel to close
+    document.addEventListener('click', (e) => {
+      if (panelOpen && !dlPanel.contains(e.target) && !dlBubble.contains(e.target)) {
+        panelOpen = false;
+        dlPanel.classList.remove('visible');
+      }
+    });
+
+    // Load history
+    window.fakturShell.getDownloadHistory().then(h => {
+      downloadHistory = h || [];
+    });
   </script>
 </body>
 </html>
