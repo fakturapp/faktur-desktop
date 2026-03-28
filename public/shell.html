@@ -50,19 +50,33 @@
     /* ── Error overlay ── */
     #error-overlay {
       position: absolute; inset: 0; background: #09090b;
-      display: none; flex-direction: column; align-items: center;
-      justify-content: center; gap: 16px; z-index: 100;
+      display: none; align-items: center; justify-content: center;
+      z-index: 100;
     }
     #error-overlay.visible { display: flex; }
-    #error-overlay .error-icon { color: #ef4444; }
-    #error-overlay h2 { font-size: 18px; font-weight: 500; color: #fafafa; }
-    #error-overlay p { font-size: 13px; color: #71717a; max-width: 340px; text-align: center; line-height: 1.5; }
-    #error-overlay .retry-btn {
-      margin-top: 8px; padding: 10px 28px; border: none; border-radius: 8px;
+    .error-card {
+      width: 380px; max-width: calc(100% - 2rem);
+      background: #18181b; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 28px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      display: flex; flex-direction: column; align-items: center;
+      gap: 12px; text-align: center;
+    }
+    .error-card .error-icon {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(239,68,68,0.1);
+      display: flex; align-items: center; justify-content: center;
+      color: #ef4444;
+    }
+    .error-card h2 { font-size: 15px; font-weight: 600; color: #fafafa; margin: 0; }
+    .error-card p { font-size: 13px; color: #71717a; max-width: 320px; line-height: 1.5; margin: 0; }
+    .error-card .error-actions { display: flex; gap: 8px; width: 100%; margin-top: 4px; }
+    .error-card .retry-btn {
+      flex: 1; padding: 10px 16px; border: none; border-radius: 8px;
       background: #5b6eea; color: white; font-family: inherit; font-size: 13px;
       font-weight: 500; cursor: pointer; transition: background 0.15s;
     }
-    #error-overlay .retry-btn:hover { background: #4c5fdb; }
+    .error-card .retry-btn:hover { background: #4c5fdb; }
 
     /* ── Password save bar ── */
     #pw-bar {
@@ -243,15 +257,21 @@
   <div id="content">
     <webview id="site" partition="persist:faktur" allowpopups></webview>
 
-    <!-- Error overlay (icone rouge) -->
+    <!-- Error overlay -->
     <div id="error-overlay">
-      <svg class="error-icon" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <path d="M15 9l-6 6M9 9l6 6"/>
-      </svg>
-      <h2>Impossible de charger la page</h2>
-      <p id="error-message">Vérifiez votre connexion internet et réessayez.</p>
-      <button class="retry-btn" id="retry-btn">Réessayer</button>
+      <div class="error-card">
+        <div class="error-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M15 9l-6 6M9 9l6 6"/>
+          </svg>
+        </div>
+        <h2>Impossible de charger la page</h2>
+        <p id="error-message">Vérifiez votre connexion internet et réessayez.</p>
+        <div class="error-actions">
+          <button class="retry-btn" id="retry-btn">Réessayer</button>
+        </div>
+      </div>
     </div>
 
     <!-- Password save bar -->
@@ -368,33 +388,44 @@
       clearTimeout(loadTimeout);
     });
 
+    const errorMessages = {
+      '-2': 'Impossible de se connecter au serveur.',
+      '-6': 'Adresse introuvable.',
+      '-7': 'Délai de connexion dépassé.',
+      '-21': 'Connexion réseau perdue.',
+      '-100': 'Connexion au serveur refusée.',
+      '-101': 'Connexion réseau refusée.',
+      '-102': 'La connexion a été interrompue.',
+      '-105': 'Impossible de résoudre le nom du serveur.',
+      '-106': 'Pas de connexion internet.',
+      '-118': 'Délai de connexion dépassé.',
+      '-200': 'Certificat de sécurité invalide.',
+      '-201': 'Certificat de sécurité expiré.',
+    };
+
+    function showLoadError(code) {
+      errorOverlay.classList.add('visible');
+      errorMessage.textContent = errorMessages[String(code)]
+        || 'Vérifiez votre connexion internet et réessayez.';
+    }
+
     // Vrai échec de chargement
     webview.addEventListener('did-fail-load', (e) => {
       clearTimeout(loadTimeout);
       if (e.errorCode === -3) return; // navigation annulée, ignorer
-      errorOverlay.classList.add('visible');
-      const messages = {
-        '-2': 'Impossible de se connecter au serveur.',
-        '-6': 'Adresse introuvable.',
-        '-7': 'Délai de connexion dépassé.',
-        '-21': 'Connexion réseau perdue.',
-        '-100': 'Connexion au serveur refusée.',
-        '-101': 'Connexion réseau refusée.',
-        '-102': 'La connexion a été interrompue.',
-        '-105': 'Impossible de résoudre le nom du serveur.',
-        '-106': 'Pas de connexion internet.',
-        '-118': 'Délai de connexion dépassé.',
-        '-200': 'Certificat de sécurité invalide.',
-        '-201': 'Certificat de sécurité expiré.',
-      };
-      errorMessage.textContent = messages[String(e.errorCode)]
-        || 'Vérifiez votre connexion internet et réessayez.';
+      showLoadError(e.errorCode);
     });
 
     retryBtn.addEventListener('click', () => {
       errorOverlay.classList.remove('visible');
       startLoadTimeout();
       webview.reload();
+    });
+
+    // Fallback: main process forwards webview load errors via IPC
+    window.fakturShell.onWebviewLoadError((data) => {
+      if (data.errorCode === -3) return;
+      showLoadError(data.errorCode);
     });
 
     /* ═══════════════════════════════════════════

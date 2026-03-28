@@ -23,5 +23,8 @@ contextBridge.exposeInMainWorld('fakturShell', {
 
   // Credentials
   saveCredentials: (data) => ipcRenderer.invoke('save-credentials', data),
-  getCredentials: (url) => ipcRenderer.invoke('get-credentials', url)
+  getCredentials: (url) => ipcRenderer.invoke('get-credentials', url),
+
+  // Load error forwarded from main process
+  onWebviewLoadError: (cb) => ipcRenderer.on('webview-load-error', (_, d) => cb(d))
 });

@@ -68,6 +68,15 @@ function createMainWindow(url, icon) {
   // Gérer les ouvertures de fenêtres depuis la webview
   mainWindow.webContents.on('did-attach-webview', (event, webContents) => {
     webviewContents = webContents;
+
+    // Fallback: forward load errors from main process to renderer
+    webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      if (!isMainFrame || errorCode === -3) return;
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('webview-load-error', { errorCode, errorDescription, validatedURL });
+      }
+    });
+
     webContents.setWindowOpenHandler(({ url: linkUrl }) => {
       // Bloquer les blob:// URLs (le download est déjà géré par will-download)
       if (linkUrl.startsWith('blob:')) {
