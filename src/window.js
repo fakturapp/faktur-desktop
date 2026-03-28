@@ -2,6 +2,7 @@ const { BrowserWindow, shell, ipcMain } = require('electron');
 const path = require('path');
 
 let mainWindow = null;
+let webviewContents = null;
 
 const WINDOW_WIDTH = parseInt(process.env.WINDOW_WIDTH) || 1280;
 const WINDOW_HEIGHT = parseInt(process.env.WINDOW_HEIGHT) || 800;
@@ -53,8 +54,20 @@ function createMainWindow(url, icon) {
     if (mainWindow) mainWindow.close();
   });
 
+  // Rafraîchir la webview avec F5 ou Ctrl+Shift+R
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F5' ||
+        (input.control && input.shift && input.key.toLowerCase() === 'r')) {
+      if (webviewContents && !webviewContents.isDestroyed()) {
+        webviewContents.reload();
+      }
+      event.preventDefault();
+    }
+  });
+
   // Gérer les ouvertures de fenêtres depuis la webview
   mainWindow.webContents.on('did-attach-webview', (event, webContents) => {
+    webviewContents = webContents;
     webContents.setWindowOpenHandler(({ url: linkUrl }) => {
       // Bloquer les blob:// URLs (le download est déjà géré par will-download)
       if (linkUrl.startsWith('blob:')) {
