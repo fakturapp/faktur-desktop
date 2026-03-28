@@ -17,6 +17,7 @@
       flex-direction: column;
     }
 
+    /* ── Titlebar ── */
     #titlebar {
       height: 36px;
       min-height: 36px;
@@ -28,70 +29,23 @@
       -webkit-app-region: drag;
       user-select: none;
     }
+    #titlebar .left { display: flex; align-items: center; padding-left: 12px; gap: 8px; }
+    #titlebar .icon { width: 20px; height: 20px; display: flex; align-items: center; }
+    #titlebar .icon svg { width: 20px; height: 20px; }
+    #titlebar .title { font-size: 13px; font-weight: 500; color: #a1a1aa; }
 
-    #titlebar .left {
-      display: flex;
-      align-items: center;
-      padding-left: 12px;
-      gap: 8px;
-    }
-
-    #titlebar .icon {
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-    }
-    #titlebar .icon svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    #titlebar .title {
-      font-size: 13px;
-      font-weight: 500;
-      color: #a1a1aa;
-    }
-
-    .controls {
-      display: flex;
-      height: 100%;
-      -webkit-app-region: no-drag;
-    }
-
+    .controls { display: flex; height: 100%; -webkit-app-region: no-drag; }
     .controls button {
-      width: 46px;
-      height: 100%;
-      border: none;
-      background: transparent;
-      color: #a1a1aa;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.15s, color 0.15s;
+      width: 46px; height: 100%; border: none; background: transparent;
+      color: #a1a1aa; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: background 0.15s, color 0.15s;
     }
-    .controls button:hover {
-      background: rgba(255,255,255,0.08);
-      color: #fafafa;
-    }
-    .controls .close:hover {
-      background: #ef4444;
-      color: white;
-    }
+    .controls button:hover { background: rgba(255,255,255,0.08); color: #fafafa; }
+    .controls .close:hover { background: #ef4444; color: white; }
 
-    #content {
-      position: relative;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    #site {
-      width: 100%;
-      height: 100%;
-      border: none;
-      background: #09090b;
-    }
+    /* ── Content area ── */
+    #content { flex: 1; position: relative; overflow: hidden; }
+    #site { width: 100%; height: 100%; border: none; background: #09090b; }
 
     /* ── Error overlay ── */
     #error-overlay {
@@ -134,12 +88,13 @@
     #pw-bar .pw-dismiss { background: rgba(255,255,255,0.08); color: #a1a1aa; }
     #pw-bar .pw-dismiss:hover { background: rgba(255,255,255,0.12); color: #fafafa; }
 
-    /* Download bubble */
+    /* ── Download bubble ── */
     #dl-bubble {
       position: absolute; bottom: 16px; right: 16px; z-index: 50;
       opacity: 0; pointer-events: none;
       transition: opacity 0.2s, transform 0.2s;
-      transform: scale(0.8); touch-action: none;
+      transform: scale(0.8);
+      touch-action: none;
     }
     #dl-bubble.visible { opacity: 1; pointer-events: auto; transform: scale(1); }
     #dl-bubble.dragging { transition: none; }
@@ -164,6 +119,8 @@
       padding: 0 4px; font-family: inherit; line-height: 1;
     }
     .badge.visible { display: flex; }
+
+    /* Progress ring */
     .progress-ring {
       position: absolute; inset: -3px; width: 48px; height: 48px;
       transform: rotate(-90deg); pointer-events: none;
@@ -175,16 +132,18 @@
       transition: stroke-dashoffset 0.3s ease;
     }
 
-    /* Download panel */
+    /* ── Download panel ── */
     #dl-panel {
       position: absolute; bottom: 66px; right: 16px;
       width: 310px; max-height: 380px;
       background: #18181b; border: 1px solid rgba(255,255,255,0.08);
       border-radius: 12px; z-index: 51;
       display: none; flex-direction: column;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5); overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      overflow: hidden;
     }
     #dl-panel.visible { display: flex; }
+
     .dl-panel-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -197,16 +156,20 @@
       justify-content: center; border-radius: 6px; transition: background 0.15s, color 0.15s;
     }
     .dl-panel-header button:hover { background: rgba(255,255,255,0.06); color: #fafafa; }
+
     .dl-panel-list { flex: 1; overflow-y: auto; padding: 4px 0; }
     .dl-panel-list::-webkit-scrollbar { width: 4px; }
     .dl-panel-list::-webkit-scrollbar-track { background: transparent; }
     .dl-panel-list::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 2px; }
+
     .dl-empty { padding: 20px 12px; text-align: center; color: #52525b; font-size: 11px; }
+
     .dl-item {
       display: flex; align-items: center; gap: 8px;
       padding: 7px 12px; transition: background 0.1s; cursor: default;
     }
     .dl-item:hover { background: rgba(255,255,255,0.03); }
+
     .dl-icon {
       width: 28px; height: 28px; border-radius: 7px;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -214,6 +177,7 @@
     .dl-icon.completed { background: rgba(91,110,234,0.12); color: #93a3f8; }
     .dl-icon.failed { background: rgba(239,68,68,0.12); color: #f87171; }
     .dl-icon.active { background: rgba(91,110,234,0.12); color: #93a3f8; }
+
     .dl-info { flex: 1; min-width: 0; }
     .dl-name {
       font-size: 11px; font-weight: 400; color: #e4e4e7;
@@ -229,6 +193,7 @@
       background: linear-gradient(90deg, #5b6eea, #7b8ef5);
       border-radius: 2px; transition: width 0.3s ease;
     }
+
     .dl-item-actions {
       display: flex; gap: 1px; flex-shrink: 0;
       opacity: 0; transition: opacity 0.15s;
@@ -278,7 +243,7 @@
   <div id="content">
     <webview id="site" partition="persist:faktur" allowpopups></webview>
 
-    <!-- Error overlay -->
+    <!-- Error overlay (icone rouge) -->
     <div id="error-overlay">
       <svg class="error-icon" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"/>
@@ -345,6 +310,8 @@
     const content = document.getElementById('content');
     const webview = document.getElementById('site');
     const url = window.fakturShell.getURL();
+
+    // Set webview preload for password detection
     const sitePreload = window.fakturShell.getSitePreloadPath();
     webview.setAttribute('preload', sitePreload);
     webview.setAttribute('src', url);
