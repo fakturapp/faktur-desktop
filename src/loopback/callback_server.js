@@ -216,11 +216,6 @@ const SUCCESS_HTML = PAGE_SHELL(
     </div>
     <h1>Connexion réussie</h1>
     <p>Vous pouvez fermer cette fenêtre et revenir à l'application Faktur Desktop.</p>
-    <div class="faktur-pill">
-      <span class="f-mark">F</span>
-      Faktur Desktop
-    </div>
-    <p class="countdown" id="countdown">Fermeture automatique dans 3 secondes…</p>
   </div>
   <script>
     let n = 3;

@@ -102,7 +102,15 @@ async function createShellWindow({ onFatalError } = {}) {
     try {
       await win.loadURL(config.urls.dashboard)
     } catch (err) {
-      console.error('[shell] failed to load dashboard:', err?.message || err)
+      const msg = err?.message || String(err)
+      // ERR_ABORTED (-3) happens when a new load preempts the current
+      // one — e.g. when we navigate away from loading.html to the
+      // dashboard, or when the dashboard SPA pushes a new state
+      // immediately on mount. This is expected behavior, NOT a failure,
+      // and we must not treat it as a fatal error (otherwise the
+      // window closes straight after the dashboard appears).
+      if (msg.includes('ERR_ABORTED') || msg.includes('(-3)')) return
+      console.error('[shell] failed to load dashboard:', msg)
       setImmediate(() => onFatalError?.('network_error'))
     }
   })()
