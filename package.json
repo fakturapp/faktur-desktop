@@ -1,46 +1,61 @@
 {
-  "name": "faktur-app",
-  "version": "1.0.0",
-  "description": "Application Electron pour Faktur - Logiciel de facturation",
-  "main": "src/main.js",
+  "name": "faktur-desktop",
+  "version": "2.0.0",
+  "description": "Client de bureau Faktur — OAuth2 + coffre-fort chiffré",
+  "main": "src/main/main.js",
+  "type": "commonjs",
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "start:dev": "cross-env FAKTUR_ENV=development electron .",
     "build": "electron-builder",
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux"
+    "build:linux": "electron-builder --linux",
+    "lint": "echo \"lint placeholder\""
   },
   "build": {
-    "appId": "com.faktur.app",
+    "appId": "cc.fakturapp.desktop",
     "productName": "Faktur",
     "directories": {
       "output": "dist"
     },
     "files": [
       "src/**/*",
-      "public/**/*",
+      "renderer/**/*",
+      "assets/**/*",
       ".env",
       "package.json"
     ],
     "win": {
       "target": "nsis",
-      "icon": "public/icon.png"
+      "icon": "assets/icon.png"
     },
     "mac": {
       "target": "dmg",
-      "icon": "public/icon.png"
+      "icon": "assets/icon.icns"
     },
     "linux": {
       "target": "AppImage",
-      "icon": "public/icon.png"
-    }
+      "icon": "assets/icon.png"
+    },
+    "protocols": [
+      {
+        "name": "Faktur",
+        "schemes": ["faktur"]
+      }
+    ]
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "electron": "^35.0.1",
-    "electron-builder": "^26.0.12",
-    "sharp": "^0.34.5"
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "dotenv": "^16.5.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fakturapp/faktur-desktop.git"
   }
 }
