@@ -28,14 +28,14 @@ const DESKTOP_USER_AGENT_SUFFIX = 'FakturDesktop/2.0'
  *  4. Install a webRequest auth bridge that keeps injecting
  *     Authorization: Bearer <token> on every request to the API host.
  */
-async function createShellWindow() {
+async function createShellWindow({ onFatalError } = {}) {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
     title: 'Faktur',
-    backgroundColor: '#faf9f7',
+    backgroundColor: '#080808',
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
@@ -47,39 +47,43 @@ async function createShellWindow() {
     },
   })
 
-  // Append the desktop suffix to the default user-agent so front-ends
-  // can detect us without us looking weird in server logs. We keep
-  // the Chromium prefix intact so third-party services don't trip.
   const defaultUa = win.webContents.userAgent
   win.webContents.setUserAgent(`${defaultUa} ${DESKTOP_USER_AGENT_SUFFIX}`)
 
-  installApiAuthBridge(win)
+  installApiAuthBridge(win, onFatalError)
 
   // Bridge the OAuth token → dashboard session BEFORE we load the URL.
-  // If it fails, we surface the error and fall back to loading the
-  // dashboard anyway so the user sees what happened (most likely a
-  // network issue or a revoked OAuth token).
+  // Any failure here is treated as a hard logout: the user has an
+  // invalid token or the backend refused the exchange. We emit a
+  // reason via onFatalError so the login window can surface it.
   let bridgedSession = null
   try {
     const oauthAccessToken = await tokenManager.getAccessToken()
     bridgedSession = await exchangeForDashboardSession(oauthAccessToken)
   } catch (err) {
     console.error('[shell] session bridge failed:', err?.message || err)
+    const code = err?.code || err?.status === 401 ? 'token_invalid' : 'bridge_failed'
+    setImmediate(() => onFatalError?.(code))
+    return win
   }
 
-  // Stamp the session token into the renderer's localStorage via a
-  // CDP bootstrap script so the write happens BEFORE any page script
-  // runs. executeJavaScript would be too late because it runs after
-  // the HTML parser — by then AuthProvider has already fetched
-  // /auth/me and redirected to /login.
-  if (bridgedSession) {
-    await injectBootstrapScript(win, bridgedSession)
+  // If the bridged session reports vaultLocked, the user is technically
+  // authenticated but can't decrypt anything. Treat it as a disconnect
+  // with a dedicated reason so the login window surfaces the right
+  // message.
+  if (bridgedSession.vaultLocked) {
+    setImmediate(() => onFatalError?.('vault_locked'))
+    return win
   }
+
+  await injectBootstrapScript(win, bridgedSession)
 
   try {
     await win.loadURL(config.urls.dashboard)
   } catch (err) {
     console.error('[shell] failed to load dashboard:', err?.message || err)
+    setImmediate(() => onFatalError?.('network_error'))
+    return win
   }
 
   win.once('ready-to-show', () => {
@@ -87,7 +91,6 @@ async function createShellWindow() {
     if (config.devtools) win.webContents.openDevTools({ mode: 'detach' })
   })
 
-  // External links open in the system browser, never a new Electron window.
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url).catch(() => {})
     return { action: 'deny' }
@@ -97,14 +100,19 @@ async function createShellWindow() {
 }
 
 /**
- * Attaches a session-level `onBeforeSendHeaders` listener that adds
- * Authorization: Bearer <token> on every request hitting the API
- * host. Uses the OAuth access token (not the exchanged dashboard
- * token) — the backend accepts both for user-scoped routes.
+ * Attaches two session-level webRequest listeners:
+ *
+ *  1. onBeforeSendHeaders injects the Authorization: Bearer header
+ *     on every request hitting the API host.
+ *  2. onCompleted watches for 401/423 responses on the same host —
+ *     any of those is a hard signal that the session is no longer
+ *     valid. We fire onFatalError so the main process logs us out
+ *     and swaps to the login window with the right banner.
  */
-function installApiAuthBridge(win) {
+function installApiAuthBridge(win, onFatalError) {
   const apiHost = new URL(config.api.baseUrl).host
   const ses = win.webContents.session
+
   ses.webRequest.onBeforeSendHeaders(async (details, callback) => {
     try {
       const target = new URL(details.url)
@@ -117,6 +125,27 @@ function installApiAuthBridge(win) {
       callback({ requestHeaders: headers })
     } catch {
       callback({ requestHeaders: details.requestHeaders })
+    }
+  })
+
+  let triggered = false
+  ses.webRequest.onCompleted((details) => {
+    if (triggered) return
+    try {
+      const target = new URL(details.url)
+      if (target.host !== apiHost) return
+      // 401 = token dead, 423 = vault locked. Either one is a hard
+      // logout for the desktop shell since we can't prompt for a
+      // password here.
+      if (details.statusCode === 401) {
+        triggered = true
+        onFatalError?.('token_invalid')
+      } else if (details.statusCode === 423) {
+        triggered = true
+        onFatalError?.('vault_locked')
+      }
+    } catch {
+      /* ignore parse errors */
     }
   })
 }

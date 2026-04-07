@@ -6,20 +6,20 @@ const config = require('../config/env')
 
 /**
  * Factory for the 'not yet authenticated' window. This is the first
- * thing the user sees — a small, frameless 'Se connecter' card. All
- * the auth heavy lifting happens in main.js via the token_manager,
- * this window just renders a button and listens for state changes.
+ * thing the user sees — a small card with a 'Se connecter' button and
+ * an optional disconnect banner when we got kicked out of a previous
+ * session (revoked token, vault locked, network error, etc.).
  */
-function createLoginWindow() {
+function createLoginWindow({ disconnectReason } = {}) {
   const win = new BrowserWindow({
     width: 480,
-    height: 600,
+    height: 640,
     resizable: false,
     minimizable: true,
     maximizable: false,
     fullscreenable: false,
     title: 'Faktur — Connexion',
-    backgroundColor: '#faf9f7',
+    backgroundColor: '#080808',
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
@@ -31,7 +31,14 @@ function createLoginWindow() {
     },
   })
 
-  win.loadFile(path.join(__dirname, '..', '..', 'renderer', 'login.html'))
+  // Forward the disconnect reason via the file URL's search param so
+  // the renderer can display the right banner without a separate IPC
+  // round trip.
+  const htmlPath = path.join(__dirname, '..', '..', 'renderer', 'login.html')
+  const search = disconnectReason
+    ? new URLSearchParams({ reason: disconnectReason }).toString()
+    : undefined
+  win.loadFile(htmlPath, search ? { search } : undefined)
 
   win.once('ready-to-show', () => {
     win.show()

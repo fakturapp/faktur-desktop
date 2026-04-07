@@ -2,117 +2,263 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';" />
   <title>Faktur — Connexion</title>
+
+  <!-- Lexend font to match the web dashboard -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
+    /* --------------------------------------------------------------
+     * Token system mirrored from the Faktur dashboard dark theme
+     * (apps/frontend/src/app/globals.css)
+     * -------------------------------------------------------------- */
     :root {
-      color-scheme: light dark;
+      --bg:              #080808;
+      --bg-elev:         #111111;
+      --bg-card:         #141414;
+      --border:          #222222;
+      --border-soft:     #1c1c1c;
+      --fg:              #efefef;
+      --fg-muted:        #999999;
+      --fg-mute-2:       #606060;
+      --primary:         #6366f1;
+      --primary-hover:   #818cf8;
+      --primary-soft:    rgba(99, 102, 241, 0.12);
+      --primary-ring:    rgba(99, 102, 241, 0.25);
+      --destructive:     #ef4444;
+      --destructive-bg:  rgba(239, 68, 68, 0.08);
+      --destructive-brd: rgba(239, 68, 68, 0.22);
+      --amber:           #f59e0b;
+      --amber-bg:        rgba(245, 158, 11, 0.08);
+      --amber-brd:       rgba(245, 158, 11, 0.22);
     }
+
     * { box-sizing: border-box; }
+
     html, body {
-      margin: 0; padding: 0;
+      margin: 0;
+      padding: 0;
       min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: #faf9f7;
-      color: #1a1a1a;
+      font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      letter-spacing: -0.01em;
     }
-    @media (prefers-color-scheme: dark) {
-      html, body { background: #080808; color: #efefef; }
-      .card { background: #141414; border: 1px solid #1f1f1f; }
-      .subtitle { color: #8b8b8b; }
-      .footer { color: #606060; }
-    }
+
     body {
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       min-height: 100vh;
-      padding: 32px;
+      padding: 32px 24px;
+      position: relative;
+      overflow: hidden;
     }
+
+    /* Subtle background texture — matches the dashboard's finder-window-bg
+       gradient with a primary glow in the top-left and a violet glow
+       in the bottom-right. */
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 10% 10%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 90%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    main {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      z-index: 1;
+    }
+
+    /* Disconnect banner shown when we got kicked out of a previous session */
+    .banner {
+      display: none;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--destructive-brd);
+      background: var(--destructive-bg);
+      color: #fca5a5;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: left;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .banner.visible { display: flex; }
+    .banner.amber {
+      border-color: var(--amber-brd);
+      background: var(--amber-bg);
+      color: #fcd34d;
+    }
+    .banner .dot {
+      flex-shrink: 0;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      margin-top: 5px;
+      box-shadow: 0 0 10px currentColor;
+    }
+    .banner strong {
+      display: block;
+      margin-bottom: 2px;
+      font-weight: 600;
+      color: var(--fg);
+    }
+
+    /* Main auth card — same density as the dashboard bento blocks */
     .card {
-      width: 100%; max-width: 420px;
-      padding: 40px 36px;
+      padding: 40px 32px;
       border-radius: 24px;
-      background: #ffffff;
-      border: 1px solid #e8e6e1;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.06);
-      text-align: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      box-shadow:
+        0 10px 40px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.02);
     }
+
     .logo {
-      width: 64px; height: 64px;
-      margin: 0 auto 24px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #6366f1, #818cf8);
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
       color: white;
       font-family: 'Lexend', sans-serif;
       font-weight: 800;
-      font-size: 28px;
-      box-shadow: 0 8px 24px rgba(99,102,241,0.3);
+      font-size: 26px;
+      box-shadow:
+        0 8px 24px rgba(99, 102, 241, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
+
     h1 {
       margin: 0 0 6px;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 700;
+      text-align: center;
       letter-spacing: -0.02em;
     }
     .subtitle {
-      margin: 0 0 32px;
-      font-size: 14px;
-      color: #6b6b6b;
-      line-height: 1.5;
+      margin: 0 0 28px;
+      font-size: 13px;
+      color: var(--fg-muted);
+      text-align: center;
+      line-height: 1.55;
     }
-    button {
+
+    button.primary {
       width: 100%;
-      height: 48px;
+      height: 46px;
       border: 0;
       border-radius: 14px;
-      background: #6366f1;
+      background: var(--primary);
       color: white;
-      font-size: 14px;
+      font-family: inherit;
+      font-size: 13px;
       font-weight: 600;
+      letter-spacing: -0.005em;
       cursor: pointer;
-      transition: all 0.15s ease;
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      box-shadow: 0 8px 24px rgba(99,102,241,0.25);
+      transition: all 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 8px 22px rgba(99, 102, 241, 0.28);
     }
-    button:hover { background: #5558e3; transform: translateY(-1px); }
-    button:active { transform: translateY(0); }
-    button:disabled { opacity: 0.6; cursor: wait; transform: none; }
+    button.primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 28px rgba(99, 102, 241, 0.38);
+    }
+    button.primary:active { transform: translateY(0); }
+    button.primary:disabled {
+      opacity: 0.55;
+      cursor: wait;
+      transform: none;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
     .error {
-      margin-top: 16px;
-      padding: 12px 14px;
+      margin-top: 14px;
+      padding: 10px 12px;
       border-radius: 12px;
-      background: rgba(239,68,68,0.08);
-      border: 1px solid rgba(239,68,68,0.2);
-      color: #ef4444;
-      font-size: 12px;
+      background: var(--destructive-bg);
+      border: 1px solid var(--destructive-brd);
+      color: #fca5a5;
+      font-size: 11px;
       text-align: left;
       display: none;
     }
     .error.visible { display: block; }
+
     .footer {
-      margin-top: 24px;
-      font-size: 11px;
-      color: #8b8b8b;
+      margin-top: 22px;
+      text-align: center;
+      font-size: 10px;
+      color: var(--fg-mute-2);
+      letter-spacing: 0.02em;
     }
+
     .spinner {
-      width: 14px; height: 14px;
-      border: 2px solid rgba(255,255,255,0.3);
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
       border-top-color: white;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    main { animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+
+    @media (max-width: 420px) {
+      .card { padding: 32px 24px; }
+    }
   </style>
 </head>
 <body>
-  <main class="card">
-    <div class="logo">F</div>
-    <h1>Bienvenue sur Faktur</h1>
-    <p class="subtitle">Connectez-vous à votre compte via votre navigateur. Votre mot de passe ne transite jamais par cette application.</p>
-    <button id="connect" type="button">
-      <span id="label">Se connecter avec Faktur</span>
-    </button>
-    <div id="error" class="error"></div>
+  <main>
+    <!-- Disconnect banner (hidden by default, populated by login.js) -->
+    <div id="banner" class="banner" role="alert">
+      <span class="dot"></span>
+      <div>
+        <strong id="banner-title">Vous avez été déconnecté</strong>
+        <span id="banner-message">Votre session a expiré. Veuillez vous reconnecter.</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="logo">F</div>
+      <h1>Bienvenue sur Faktur</h1>
+      <p class="subtitle">
+        Connectez-vous à votre compte via votre navigateur. Votre mot de passe
+        ne transite jamais par cette application.
+      </p>
+      <button id="connect" class="primary" type="button">
+        <span id="label">Se connecter avec Faktur</span>
+      </button>
+      <div id="error" class="error"></div>
+    </div>
+
     <p class="footer">Faktur Desktop · v2.0.0</p>
   </main>
   <script src="./js/login.js"></script>

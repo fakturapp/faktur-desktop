@@ -47,8 +47,11 @@ if (!gotTheLock) {
 
 /** Holds a reference to whatever window is currently on screen. */
 let currentWindow = null
+/** Reason code for the most recent logout — forwarded to the login
+ *  window so it can display the 'Vous avez été déconnecté' banner. */
+let lastLogoutReason = null
 
-async function openForState(state) {
+async function openForState(state, options = {}) {
   // Tear down any open window before we put a different one up.
   if (currentWindow && !currentWindow.isDestroyed()) {
     currentWindow.close()
@@ -56,9 +59,14 @@ async function openForState(state) {
   }
 
   if (state === constants.session.AUTHENTICATED) {
-    currentWindow = await createShellWindow()
+    currentWindow = await createShellWindow({
+      onFatalError: async (reason) => {
+        lastLogoutReason = reason
+        await tokenManager.logout({ remoteRevoke: false, reason })
+      },
+    })
   } else {
-    currentWindow = createLoginWindow()
+    currentWindow = createLoginWindow({ disconnectReason: options.reason || lastLogoutReason })
   }
 
   currentWindow.on('closed', () => {
@@ -89,10 +97,13 @@ async function bootstrap() {
         payload.state === constants.session.AUTHENTICATED &&
         currentWindow?.getTitle?.()?.includes('Connexion')
       ) {
+        lastLogoutReason = null
         await openForState(constants.session.AUTHENTICATED)
       }
       if (payload.state === constants.session.UNAUTHENTICATED && currentWindow) {
-        await openForState(constants.session.UNAUTHENTICATED)
+        // Remember why we got kicked out so the login window can show it.
+        if (payload.reason) lastLogoutReason = payload.reason
+        await openForState(constants.session.UNAUTHENTICATED, { reason: payload.reason })
       }
     },
   })

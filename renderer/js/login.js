@@ -1,14 +1,87 @@
 'use strict'
 
 /**
- * Login window renderer. Minimal: a 'Se connecter' button that
- * invokes the main-process auth flow, shows a spinner while the
- * browser dance runs, and surfaces any error back on the card.
+ * Login window renderer — drives the 'Se connecter avec Faktur' button
+ * and, if the main process passed us a disconnectReason through the
+ * file URL query string, surfaces a banner explaining what happened.
  */
 
 const button = document.getElementById('connect')
 const label = document.getElementById('label')
 const errorBox = document.getElementById('error')
+const banner = document.getElementById('banner')
+const bannerTitle = document.getElementById('banner-title')
+const bannerMessage = document.getElementById('banner-message')
+
+/* ─────────────── Disconnect reason banner ─────────────── */
+
+const DISCONNECT_MESSAGES = {
+  token_invalid: {
+    title: 'Vous avez été déconnecté(e)',
+    message:
+      'Votre session a expiré ou a été révoquée à distance. Reconnectez-vous pour continuer.',
+    variant: 'red',
+  },
+  token_expired: {
+    title: 'Session expirée',
+    message: 'Votre session OAuth a expiré. Veuillez vous reconnecter.',
+    variant: 'red',
+  },
+  bridge_failed: {
+    title: 'Échec du pont de session',
+    message:
+      "Faktur n'a pas pu valider votre session. Vos identifiants locaux ont été effacés par sécurité.",
+    variant: 'red',
+  },
+  vault_locked: {
+    title: 'Coffre-fort verrouillé',
+    message:
+      "Votre coffre-fort est verrouillé et ne peut pas être déverrouillé depuis le bureau. " +
+      'Reconnectez-vous pour démarrer une nouvelle session.',
+    variant: 'amber',
+  },
+  network_error: {
+    title: 'Erreur réseau',
+    message: 'Impossible de contacter les serveurs Faktur. Vérifiez votre connexion.',
+    variant: 'red',
+  },
+  refresh_failed: {
+    title: 'Session perdue',
+    message: 'Le jeton de rafraîchissement a échoué. Reconnectez-vous pour continuer.',
+    variant: 'red',
+  },
+  user_logout: null, // normal logout — no banner
+  revoked: {
+    title: 'Accès révoqué',
+    message:
+      "Un administrateur ou vous-même avez révoqué cette application depuis Mon compte → " +
+      'Applications connectées.',
+    variant: 'red',
+  },
+}
+
+function getReasonFromQuery() {
+  try {
+    const url = new URL(window.location.href)
+    return url.searchParams.get('reason')
+  } catch {
+    return null
+  }
+}
+
+function showBanner(reason) {
+  if (!reason) return
+  const meta = DISCONNECT_MESSAGES[reason]
+  if (!meta) return
+  bannerTitle.textContent = meta.title
+  bannerMessage.textContent = meta.message
+  banner.classList.add('visible')
+  if (meta.variant === 'amber') banner.classList.add('amber')
+}
+
+showBanner(getReasonFromQuery())
+
+/* ─────────────── Error helpers ─────────────── */
 
 function showError(msg) {
   errorBox.textContent = msg
@@ -27,8 +100,11 @@ function setLoading(isLoading) {
     : 'Se connecter avec Faktur'
 }
 
+/* ─────────────── Auth flow trigger ─────────────── */
+
 button.addEventListener('click', async () => {
   clearError()
+  banner.classList.remove('visible') // hide banner on retry
   setLoading(true)
   try {
     const result = await window.faktur.startAuth()
@@ -36,15 +112,12 @@ button.addEventListener('click', async () => {
       showError(result?.error || "Impossible de démarrer l'authentification")
     }
   } catch (err) {
-    showError(err?.message || "Erreur inattendue")
+    showError(err?.message || 'Erreur inattendue')
   } finally {
     setLoading(false)
   }
 })
 
-// If the main process flips the session to 'authenticated' while this
-// window is still visible, it will be closed automatically — we don't
-// need to do anything here, but we still listen to expose debug info.
 if (window.faktur?.onSessionChange) {
   window.faktur.onSessionChange((payload) => {
     if (payload.state === 'error') {
