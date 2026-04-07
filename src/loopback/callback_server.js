@@ -28,52 +28,228 @@ class CallbackServerError extends Error {
   }
 }
 
-const SUCCESS_HTML = `<!doctype html>
+/* -------------------------------------------------------------------
+ * Dark Faktur themed HTML pages served by the loopback listener.
+ * Mirror the dashboard's colour tokens (#080808 bg, #141414 card,
+ * #222 border, #6366f1 primary) and the Lexend font used across the
+ * rest of the app so the hand-off between browser and desktop feels
+ * seamless.
+ * ----------------------------------------------------------------- */
+
+const PAGE_SHELL = (title, body) => `<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>Faktur — Connexion réussie</title>
+  <title>Faktur — ${title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: -apple-system, system-ui, sans-serif; background: #faf9f7; color: #1a1a1a; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-    .card { max-width: 420px; padding: 32px; border-radius: 20px; background: white; box-shadow: 0 10px 40px rgba(0,0,0,.06); text-align: center; }
-    .check { width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; }
-    h1 { font-size: 20px; margin: 0 0 8px; }
-    p { color: #6b6b6b; font-size: 14px; line-height: 1.5; margin: 0; }
+    :root {
+      --bg: #080808;
+      --bg-card: #141414;
+      --border: #222222;
+      --fg: #efefef;
+      --fg-muted: #999999;
+      --primary: #6366f1;
+      --primary-hover: #818cf8;
+      --emerald: #22c55e;
+      --emerald-soft: rgba(34, 197, 94, 0.12);
+      --destructive: #ef4444;
+      --destructive-soft: rgba(239, 68, 68, 0.1);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      min-height: 100vh;
+      font-family: 'Lexend', -apple-system, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.01em;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 15% 15%, rgba(99, 102, 241, 0.1) 0%, transparent 45%),
+        radial-gradient(ellipse at 85% 85%, rgba(139, 92, 246, 0.06) 0%, transparent 45%);
+      pointer-events: none;
+    }
+    main {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+      animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 44px 36px;
+      text-align: center;
+      box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+    .icon-wrap {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 22px;
+    }
+    .icon {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 22px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      z-index: 2;
+    }
+    .icon.ok    { background: var(--emerald-soft); color: var(--emerald); }
+    .icon.error { background: var(--destructive-soft); color: var(--destructive); }
+    .halo {
+      position: absolute;
+      inset: -4px;
+      border-radius: 26px;
+      filter: blur(20px);
+      opacity: 0.45;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .halo.ok    { background: var(--emerald); }
+    .halo.error { background: var(--destructive); }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3;  transform: scale(0.94); }
+      50%      { opacity: 0.55; transform: scale(1.08); }
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 8px;
+      letter-spacing: -0.02em;
+    }
+    p {
+      color: var(--fg-muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0;
+    }
+    code {
+      display: block;
+      margin-top: 18px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+      font-size: 11px;
+      color: #fca5a5;
+      word-break: break-word;
+      text-align: left;
+    }
+    .faktur-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 22px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .f-mark {
+      width: 18px; height: 18px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+    }
+    .countdown {
+      margin-top: 18px;
+      font-size: 11px;
+      color: #606060;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="check"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></div>
-    <h1>Connexion réussie</h1>
-    <p>Vous pouvez fermer cette fenêtre et retourner à l'application Faktur.</p>
-  </div>
-  <script>setTimeout(() => window.close(), 2500)</script>
+  <main>
+    ${body}
+  </main>
 </body>
 </html>`
 
-const ERROR_HTML = (message) => `<!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <title>Faktur — Erreur</title>
-  <style>
-    body { font-family: -apple-system, system-ui, sans-serif; background: #faf9f7; color: #1a1a1a; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-    .card { max-width: 420px; padding: 32px; border-radius: 20px; background: white; box-shadow: 0 10px 40px rgba(0,0,0,.06); text-align: center; }
-    .x { width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; }
-    h1 { font-size: 20px; margin: 0 0 8px; }
-    p { color: #6b6b6b; font-size: 14px; line-height: 1.5; margin: 0; }
-    code { display: block; margin-top: 12px; padding: 10px; border-radius: 8px; background: #f3f2ef; font-size: 12px; word-break: break-word; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="x"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
-    <h1>Connexion impossible</h1>
-    <p>Une erreur s'est produite pendant l'autorisation.</p>
-    <code>${message}</code>
+const CHECK_SVG = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>`
+const X_SVG = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`
+
+const SUCCESS_HTML = PAGE_SHELL(
+  'Connexion réussie',
+  `<div class="card">
+    <div class="icon-wrap">
+      <div class="halo ok"></div>
+      <div class="icon ok">${CHECK_SVG}</div>
+    </div>
+    <h1>Connexion réussie</h1>
+    <p>Vous pouvez fermer cette fenêtre et revenir à l'application Faktur Desktop.</p>
+    <div class="faktur-pill">
+      <span class="f-mark">F</span>
+      Faktur Desktop
+    </div>
+    <p class="countdown" id="countdown">Fermeture automatique dans 3 secondes…</p>
   </div>
-</body>
-</html>`
+  <script>
+    let n = 3;
+    const el = document.getElementById('countdown');
+    const int = setInterval(() => {
+      n--;
+      if (n <= 0) { clearInterval(int); window.close(); return; }
+      el.textContent = 'Fermeture automatique dans ' + n + ' secondes…';
+    }, 1000);
+  </script>`
+)
+
+const ERROR_HTML = (message) =>
+  PAGE_SHELL(
+    'Erreur',
+    `<div class="card">
+      <div class="icon-wrap">
+        <div class="halo error"></div>
+        <div class="icon error">${X_SVG}</div>
+      </div>
+      <h1>Connexion impossible</h1>
+      <p>Une erreur s'est produite pendant l'autorisation. Retournez à l'application pour réessayer.</p>
+      <code>${String(message).replace(/</g, '&lt;')}</code>
+      <div class="faktur-pill">
+        <span class="f-mark">F</span>
+        Faktur Desktop
+      </div>
+    </div>`
+  )
 
 /**
  * Starts the loopback listener and returns a promise that resolves

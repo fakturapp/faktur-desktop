@@ -36,7 +36,7 @@ async function createShellWindow({ onFatalError } = {}) {
     minHeight: 700,
     title: 'Faktur',
     backgroundColor: '#080808',
-    show: false,
+    show: true, // show immediately with the loading screen
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, '..', '..', 'renderer', 'preload', 'shell_preload.js'),
@@ -50,53 +50,113 @@ async function createShellWindow({ onFatalError } = {}) {
   const defaultUa = win.webContents.userAgent
   win.webContents.setUserAgent(`${defaultUa} ${DESKTOP_USER_AGENT_SUFFIX}`)
 
+  // Show the local loading screen first so the user sees something in
+  // < 100ms instead of a blank 3-second wait. The loading page is a
+  // static HTML file bundled with the app — no network, no external
+  // dependency beyond the Google Fonts stylesheet.
+  const loadingPath = path.join(__dirname, '..', '..', 'renderer', 'loading.html')
+  win.loadFile(loadingPath).catch(() => {})
+
+  // Prevent the regular Faktur web login page from ever being shown
+  // inside the Electron shell — if AuthProvider tries to redirect to
+  // /login (e.g. after a manual logout from the dashboard or a 401
+  // on any request) we tear the shell down and swap to the native
+  // login window instead.
+  installNavigationGuard(win, onFatalError)
   installApiAuthBridge(win, onFatalError)
-
-  // Bridge the OAuth token → dashboard session BEFORE we load the URL.
-  // Any failure here is treated as a hard logout: the user has an
-  // invalid token or the backend refused the exchange. We emit a
-  // reason via onFatalError so the login window can surface it.
-  let bridgedSession = null
-  try {
-    const oauthAccessToken = await tokenManager.getAccessToken()
-    bridgedSession = await exchangeForDashboardSession(oauthAccessToken)
-  } catch (err) {
-    console.error('[shell] session bridge failed:', err?.message || err)
-    const code = err?.code || err?.status === 401 ? 'token_invalid' : 'bridge_failed'
-    setImmediate(() => onFatalError?.(code))
-    return win
-  }
-
-  // If the bridged session reports vaultLocked, the user is technically
-  // authenticated but can't decrypt anything. Treat it as a disconnect
-  // with a dedicated reason so the login window surfaces the right
-  // message.
-  if (bridgedSession.vaultLocked) {
-    setImmediate(() => onFatalError?.('vault_locked'))
-    return win
-  }
-
-  await injectBootstrapScript(win, bridgedSession)
-
-  try {
-    await win.loadURL(config.urls.dashboard)
-  } catch (err) {
-    console.error('[shell] failed to load dashboard:', err?.message || err)
-    setImmediate(() => onFatalError?.('network_error'))
-    return win
-  }
-
-  win.once('ready-to-show', () => {
-    win.show()
-    if (config.devtools) win.webContents.openDevTools({ mode: 'detach' })
-  })
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url).catch(() => {})
     return { action: 'deny' }
   })
 
+  if (config.devtools) win.webContents.openDevTools({ mode: 'detach' })
+
+  // Kick off the session bridge AFTER the window is visible so the
+  // 200-500ms HTTP round trip doesn't block the UI.
+  ;(async () => {
+    let bridgedSession = null
+    try {
+      const oauthAccessToken = await tokenManager.getAccessToken()
+      bridgedSession = await exchangeForDashboardSession(oauthAccessToken)
+    } catch (err) {
+      console.error('[shell] session bridge failed:', err?.message || err)
+      const code = err?.status === 401 ? 'token_invalid' : 'bridge_failed'
+      setImmediate(() => onFatalError?.(code))
+      return
+    }
+
+    if (bridgedSession.vaultLocked) {
+      setImmediate(() => onFatalError?.('vault_locked'))
+      return
+    }
+
+    try {
+      await injectBootstrapScript(win, bridgedSession)
+    } catch (err) {
+      console.error('[shell] bootstrap injection failed:', err?.message || err)
+    }
+
+    if (win.isDestroyed()) return
+
+    try {
+      await win.loadURL(config.urls.dashboard)
+    } catch (err) {
+      console.error('[shell] failed to load dashboard:', err?.message || err)
+      setImmediate(() => onFatalError?.('network_error'))
+    }
+  })()
+
   return win
+}
+
+/**
+ * Blocks any navigation inside the shell that isn't to the dashboard,
+ * the API or the local loopback. Also detects the dashboard's /login
+ * redirect (which happens on logout or 401) and turns it into a
+ * fatal error so the main process swaps back to the native login
+ * window instead of rendering a dead-end login form here.
+ */
+function installNavigationGuard(win, onFatalError) {
+  const dashboardOrigin = new URL(config.urls.dashboard).origin
+
+  win.webContents.on('will-navigate', (event, url) => {
+    try {
+      const target = new URL(url)
+      // /login on the dashboard host → user logged out. Hard swap.
+      if (target.origin === dashboardOrigin && target.pathname.startsWith('/login')) {
+        event.preventDefault()
+        setImmediate(() => onFatalError?.('user_logout'))
+        return
+      }
+      // Allow same-origin and loopback navigations, kill everything else.
+      const allowed = [
+        dashboardOrigin,
+        new URL(config.api.baseUrl).origin,
+        'http://127.0.0.1',
+        'http://localhost',
+        'file://',
+      ]
+      if (!allowed.some((prefix) => url.startsWith(prefix))) {
+        event.preventDefault()
+      }
+    } catch {
+      event.preventDefault()
+    }
+  })
+
+  // Catch client-side navigations triggered by router.push('/login') too —
+  // will-navigate only fires on full loads, not History.pushState changes.
+  win.webContents.on('did-navigate-in-page', (_event, url) => {
+    try {
+      const target = new URL(url)
+      if (target.origin === dashboardOrigin && target.pathname.startsWith('/login')) {
+        setImmediate(() => onFatalError?.('user_logout'))
+      }
+    } catch {
+      /* ignore */
+    }
+  })
 }
 
 /**

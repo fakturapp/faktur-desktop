@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;" />
+  <title>Faktur — Chargement</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:           #080808;
+      --bg-card:      #141414;
+      --border:       #222222;
+      --fg:           #efefef;
+      --fg-muted:     #999999;
+      --primary:      #6366f1;
+      --primary-hover:#818cf8;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      font-family: 'Lexend', -apple-system, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.01em;
+      overflow: hidden;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      position: relative;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 10% 10%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 90%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    main {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      animation: fadeInUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+    .logo-wrap {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+    }
+    .logo {
+      position: absolute;
+      inset: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+      color: white;
+      font-weight: 800;
+      font-size: 30px;
+      box-shadow:
+        0 12px 32px rgba(99, 102, 241, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      z-index: 2;
+    }
+    .halo {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      background: var(--primary);
+      filter: blur(24px);
+      opacity: 0.35;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.25; transform: scale(0.95); }
+      50%      { opacity: 0.5;  transform: scale(1.1);  }
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+    }
+    p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--fg-muted);
+    }
+    .dots {
+      display: inline-flex;
+      gap: 4px;
+      margin-left: 4px;
+    }
+    .dots span {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .dots span:nth-child(2) { animation-delay: 0.15s; }
+    .dots span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes bounce {
+      0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+      30%           { opacity: 1;   transform: translateY(-3px); }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="logo-wrap">
+      <div class="halo"></div>
+      <div class="logo">F</div>
+    </div>
+    <h1>Faktur</h1>
+    <p>
+      Préparation de votre espace
+      <span class="dots"><span></span><span></span><span></span></span>
+    </p>
+  </main>
+</body>
+</html>
