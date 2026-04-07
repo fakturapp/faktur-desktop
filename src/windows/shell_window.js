@@ -99,16 +99,32 @@ async function createShellWindow({ onFatalError } = {}) {
 
     if (win.isDestroyed()) return
 
+    // Build the dashboard URL with the session bundled in the URL
+    // fragment. Fragments never reach the server, never appear in
+    // logs/referrers, and can be read synchronously on first render
+    // by a tiny snippet in the frontend's auth layer. Much more
+    // reliable than the CDP injection path which races against
+    // Chromium's navigation state machine.
+    const sessionPayload = {
+      t: bridgedSession.token,
+      v: bridgedSession.vaultKey,
+      l: !!bridgedSession.vaultLocked,
+      s: 'desktop',
+    }
+    const encoded = Buffer.from(JSON.stringify(sessionPayload), 'utf8').toString('base64url')
+
+    // Always go straight to /dashboard, never the root, to avoid the
+    // HomePage redirect race that could land us on /login.
+    const target = `${config.urls.dashboard.replace(/\/+$/, '')}/dashboard#faktur_desktop_session=${encoded}`
+
     try {
-      await win.loadURL(config.urls.dashboard)
+      await win.loadURL(target)
     } catch (err) {
       const msg = err?.message || String(err)
       // ERR_ABORTED (-3) happens when a new load preempts the current
       // one — e.g. when we navigate away from loading.html to the
       // dashboard, or when the dashboard SPA pushes a new state
-      // immediately on mount. This is expected behavior, NOT a failure,
-      // and we must not treat it as a fatal error (otherwise the
-      // window closes straight after the dashboard appears).
+      // immediately on mount. Expected behaviour, NOT a failure.
       if (msg.includes('ERR_ABORTED') || msg.includes('(-3)')) return
       console.error('[shell] failed to load dashboard:', msg)
       setImmediate(() => onFatalError?.('network_error'))
