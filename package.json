@@ -8,6 +8,9 @@
   "scripts": {
     "start": "electron .",
     "start:dev": "cross-env FAKTUR_ENV=development electron .",
+    "cleanup": "node scripts/cleanup.js",
+    "cleanup:all": "node scripts/cleanup.js --dist",
+    "cleanup:dry": "node scripts/cleanup.js --dry",
     "build": "electron-builder",
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
