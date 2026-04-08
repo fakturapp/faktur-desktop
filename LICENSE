@@ -1,0 +1,64 @@
+Faktur Desktop — Personal Use License
+
+Copyright (c) 2026 danbenba. All rights reserved.
+
+This software and its source code are the exclusive property of danbenba.
+
+Permission is hereby granted, free of charge, to any individual obtaining a
+copy of this software and associated documentation files (the "Software"),
+to use the Software solely for personal, non-commercial purposes, subject
+to the following conditions:
+
+1. PERSONAL USE ONLY
+   The Software may be used by an individual for their own personal use.
+   This includes running a personal instance of the Software as a desktop
+   client for Faktur, using their own OAuth credentials.
+
+2. NO COMMERCIAL USE
+   The Software may not be used, in whole or in part, for any commercial
+   purpose. This includes, but is not limited to, selling the Software,
+   offering the Software as a paid service, bundling the Software with a
+   commercial offering, or using the Software to generate revenue directly
+   or indirectly.
+
+3. NO REDISTRIBUTION
+   The Software may not be redistributed, sublicensed, shared, published,
+   or otherwise made available to third parties, whether for free or for
+   a fee, without the prior written consent of the copyright holder.
+   Building and running the Software on your own machine is permitted;
+   publishing a repackaged binary is not.
+
+4. NO DERIVATIVE WORKS
+   The Software may not be modified, adapted, translated, or used as a
+   basis to create derivative works, competing products, alternative
+   desktop clients for Faktur, or similar services. Forking the repository
+   for the sole purpose of creating another product or a competing Faktur
+   client is expressly prohibited.
+
+5. NO IMPERSONATION
+   Modified or rebuilt copies of the Software may not present themselves
+   as "Faktur Desktop" or use the Faktur name, logo, brand assets, or
+   the Ed25519 signing keys of the official maintainer in a way that
+   could mislead users into believing the build is the official release.
+
+6. SOURCE CODE AVAILABILITY
+   The source code is made available for transparency and educational
+   purposes only. Access to the source code does not grant any rights
+   beyond those explicitly stated in this license.
+
+7. ATTRIBUTION
+   Any permitted use of the Software must retain this license notice and
+   the copyright notice in all copies or substantial portions of the
+   Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+For commercial licensing, partnership inquiries, or permissions beyond the
+scope of this license, please contact the copyright holder at
+contact@fakturapp.cc.
