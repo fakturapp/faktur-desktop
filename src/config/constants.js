@@ -13,6 +13,7 @@ module.exports = Object.freeze({
     VAULT_OPEN_UNLOCK: 'vault:open-unlock',
     OPEN_EXTERNAL: 'window:open-external',
     GET_APP_INFO: 'app:get-info',
+    ATTESTATION_GET_STATUS: 'attestation:get-status',
     UPDATE_GET_PENDING: 'update:get-pending',
     UPDATE_CHECK: 'update:check',
     UPDATE_AVAILABLE: 'update:available',

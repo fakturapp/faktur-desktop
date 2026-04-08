@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('fakturDesktop', {
 
   getSessionState: () => ipcRenderer.invoke('session:get-state'),
   getAppInfo: () => ipcRenderer.invoke('app:get-info'),
+  getCertificationStatus: () => ipcRenderer.invoke('attestation:get-status'),
   logout: () => ipcRenderer.invoke('auth:logout'),
   openVaultUnlock: () => ipcRenderer.invoke('vault:open-unlock'),
   openExternal: (url) => {

@@ -4,6 +4,7 @@ const { ipcMain, shell, BrowserWindow } = require('electron')
 const constants = require('../config/constants')
 const tokenManager = require('../oauth/token_manager')
 const updater = require('../update/updater')
+const attestation = require('../security/attestation')
 const config = require('../config/env')
 
 // ---------- IPC registration ----------
@@ -48,6 +49,11 @@ function registerIpcHandlers({ onSessionChange, onUpdateBegin }) {
       platform: process.platform,
       isDesktop: true,
     }
+  })
+
+  // ---------- Attestation ----------
+  ipcMain.handle(ipc.ATTESTATION_GET_STATUS, () => {
+    return attestation.getCertificationStatus()
   })
 
   // ---------- Update ----------
