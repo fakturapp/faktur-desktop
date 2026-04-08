@@ -34,6 +34,7 @@ function createLoginWindow({ disconnectReason } = {}) {
     backgroundColor: '#080808',
     show: false,
     autoHideMenuBar: true,
+    icon: path.join(__dirname, '..', '..', 'renderer', 'assets', 'favicon.ico'),
     webPreferences,
   })
 

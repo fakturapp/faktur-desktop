@@ -38,6 +38,7 @@ async function createShellWindow({ onFatalError } = {}) {
     backgroundColor: '#080808',
     show: true,
     autoHideMenuBar: true,
+    icon: path.join(__dirname, '..', '..', 'renderer', 'assets', 'favicon.ico'),
     webPreferences,
   })
 
