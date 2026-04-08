@@ -215,10 +215,6 @@ const ERROR_HTML = (message) =>
       <h1>Connexion impossible</h1>
       <p>Une erreur s'est produite pendant l'autorisation. Retournez à l'application pour réessayer.</p>
       <code>${String(message).replace(/</g, '&lt;')}</code>
-      <div class="faktur-pill">
-        <span class="f-mark">F</span>
-        Faktur Desktop
-      </div>
     </div>`
   )
 
