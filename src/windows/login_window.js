@@ -3,11 +3,25 @@
 const path = require('node:path')
 const { BrowserWindow, session } = require('electron')
 const config = require('../config/env')
+const { assertSecureWebPreferences } = require('../security/hardening')
 
 const LOGIN_PARTITION = 'persist:faktur-desktop-login'
 
 function createLoginWindow({ disconnectReason } = {}) {
   const loginSession = session.fromPartition(LOGIN_PARTITION)
+
+  const webPreferences = {
+    preload: path.join(__dirname, '..', '..', 'renderer', 'preload', 'login_preload.js'),
+    contextIsolation: true,
+    nodeIntegration: false,
+    sandbox: true,
+    webSecurity: true,
+    allowRunningInsecureContent: false,
+    experimentalFeatures: false,
+    devTools: config.devtools,
+    session: loginSession,
+  }
+  assertSecureWebPreferences('login', webPreferences)
 
   const win = new BrowserWindow({
     width: 480,
@@ -20,17 +34,7 @@ function createLoginWindow({ disconnectReason } = {}) {
     backgroundColor: '#080808',
     show: false,
     autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, '..', '..', 'renderer', 'preload', 'login_preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-      webSecurity: true,
-      allowRunningInsecureContent: false,
-      experimentalFeatures: false,
-      devTools: config.devtools,
-      session: loginSession,
-    },
+    webPreferences,
   })
 
   const htmlPath = path.join(__dirname, '..', '..', 'renderer', 'login.html')

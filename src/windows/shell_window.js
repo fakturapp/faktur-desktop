@@ -6,6 +6,7 @@ const config = require('../config/env')
 const tokenManager = require('../oauth/token_manager')
 const { exchangeForDashboardSession } = require('../oauth/session_bridge')
 const { computeDesktopProofHeader } = require('../security/desktop_proof')
+const { assertSecureWebPreferences } = require('../security/hardening')
 
 // ---------- Constants ----------
 const DESKTOP_USER_AGENT_SUFFIX = 'FakturDesktop/2.0'
@@ -14,6 +15,19 @@ const SHELL_PARTITION = 'persist:faktur-desktop-shell'
 // ---------- Public factory ----------
 async function createShellWindow({ onFatalError } = {}) {
   const shellSession = session.fromPartition(SHELL_PARTITION)
+
+  const webPreferences = {
+    preload: path.join(__dirname, '..', '..', 'renderer', 'preload', 'shell_preload.js'),
+    contextIsolation: true,
+    nodeIntegration: false,
+    sandbox: false,
+    webSecurity: true,
+    allowRunningInsecureContent: false,
+    experimentalFeatures: false,
+    devTools: config.devtools,
+    session: shellSession,
+  }
+  assertSecureWebPreferences('shell', webPreferences)
 
   const win = new BrowserWindow({
     width: 1400,
@@ -24,17 +38,7 @@ async function createShellWindow({ onFatalError } = {}) {
     backgroundColor: '#080808',
     show: true,
     autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, '..', '..', 'renderer', 'preload', 'shell_preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
-      webSecurity: true,
-      allowRunningInsecureContent: false,
-      experimentalFeatures: false,
-      devTools: config.devtools,
-      session: shellSession,
-    },
+    webPreferences,
   })
 
   const defaultUa = win.webContents.userAgent
