@@ -15,7 +15,8 @@
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux",
-    "test": "node tests/desktop_proof.test.js",
+    "generate:signing-key": "node scripts/generate-signing-key.js",
+    "test": "node tests/desktop_proof.test.js && node tests/attestation.test.js",
     "lint": "echo \"lint placeholder\""
   },
   "build": {
@@ -31,10 +32,20 @@
       "package.json",
       "!**/*.map",
       "!**/*.md",
-      "!**/.env*"
+      "!**/.env*",
+      "!tests/**/*",
+      "!scripts/**/*"
     ],
     "asar": true,
     "asarUnpack": [],
+    "afterPack": "scripts/afterPack.js",
+    "extraResources": [],
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "FakturDesktop-Installer.exe",
+      "allowToChangeInstallationDirectory": false
+    },
     "electronFuses": {
       "runAsNode": false,
       "enableCookieEncryption": true,
