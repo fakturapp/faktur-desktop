@@ -2,6 +2,10 @@
   "name": "faktur-desktop",
   "version": "2.0.0",
   "description": "Client de bureau Faktur — OAuth2 + coffre-fort chiffré",
+  "author": {
+    "name": "danbenba",
+    "email": "support@fakturapp.cc"
+  },
   "main": "src/main/main.js",
   "type": "commonjs",
   "license": "MIT",
@@ -11,10 +15,11 @@
     "cleanup": "node scripts/cleanup.js",
     "cleanup:all": "node scripts/cleanup.js --dist",
     "cleanup:dry": "node scripts/cleanup.js --dry",
-    "build": "electron-builder",
-    "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux",
+    "compile-env": "node scripts/compile-env.js",
+    "build": "node scripts/compile-env.js && electron-builder",
+    "build:win": "node scripts/compile-env.js && electron-builder --win",
+    "build:mac": "node scripts/compile-env.js && electron-builder --mac",
+    "build:linux": "node scripts/compile-env.js && electron-builder --linux",
     "generate:signing-key": "node scripts/generate-signing-key.js",
     "test": "node tests/desktop_proof.test.js && node tests/attestation.test.js",
     "lint": "echo \"lint placeholder\""
@@ -28,7 +33,6 @@
     "files": [
       "src/**/*",
       "renderer/**/*",
-      "assets/**/*",
       "package.json",
       "!**/*.map",
       "!**/*.md",
@@ -58,13 +62,12 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.png",
-      "signingHashAlgorithms": ["sha256"],
+      "icon": "renderer/assets/favicon.ico",
       "signAndEditExecutable": true
     },
     "mac": {
       "target": "dmg",
-      "icon": "assets/icon.icns",
+      "icon": "renderer/assets/favicon.ico",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
@@ -72,7 +75,7 @@
     },
     "linux": {
       "target": "AppImage",
-      "icon": "assets/icon.png"
+      "icon": "renderer/assets/favicon.ico"
     },
     "protocols": [
       {
