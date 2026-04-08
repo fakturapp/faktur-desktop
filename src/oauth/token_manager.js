@@ -145,12 +145,20 @@ class TokenManager {
   }
 
   // ---------- Logout ----------
-  async logout({ remoteRevoke = true, reason = 'user_logout' } = {}) {
+  // wipeAll === false (default): only the encrypted secure store is
+  //   cleared. Cookies, localStorage, cache, indexedDB, and service
+  //   workers in the shell partition are LEFT IN PLACE so theme,
+  //   language, dismissed banners, etc. survive the logout.
+  // wipeAll === true: full nuclear option — every browser-side bucket
+  //   on every partition is wiped on top of the secure store.
+  async logout({ remoteRevoke = true, reason = 'user_logout', wipeAll = false } = {}) {
     const access = secureStore.get(storageKeys.ACCESS_TOKEN)
     const refresh = secureStore.get(storageKeys.REFRESH_TOKEN)
 
     secureStore.clear()
-    await this._wipeAllSessionStorage()
+    if (wipeAll) {
+      await this._wipeAllSessionStorage()
+    }
 
     if (remoteRevoke) {
       if (access) await oauthClient.revokeToken({ token: access, hint: 'access_token' })

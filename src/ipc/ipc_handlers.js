@@ -25,8 +25,13 @@ function registerIpcHandlers({ onSessionChange, onUpdateBegin }) {
     }
   })
 
-  ipcMain.handle(ipc.AUTH_LOGOUT, async () => {
-    await tokenManager.logout({ remoteRevoke: true, reason: 'user_logout' })
+  ipcMain.handle(ipc.AUTH_LOGOUT, async (_event, opts) => {
+    const wipeAll = !!(opts && opts.wipeAll)
+    await tokenManager.logout({
+      remoteRevoke: true,
+      reason: 'user_logout',
+      wipeAll,
+    })
     return { ok: true }
   })
 

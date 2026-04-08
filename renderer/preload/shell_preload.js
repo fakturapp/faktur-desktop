@@ -13,7 +13,10 @@ contextBridge.exposeInMainWorld('fakturDesktop', {
   getSessionState: () => ipcRenderer.invoke('session:get-state'),
   getAppInfo: () => ipcRenderer.invoke('app:get-info'),
   getCertificationStatus: () => ipcRenderer.invoke('attestation:get-status'),
-  logout: () => ipcRenderer.invoke('auth:logout'),
+  logout: (opts) => {
+    const safeOpts = opts && typeof opts === 'object' ? { wipeAll: !!opts.wipeAll } : {}
+    return ipcRenderer.invoke('auth:logout', safeOpts)
+  },
   openVaultUnlock: () => ipcRenderer.invoke('vault:open-unlock'),
   openExternal: (url) => {
     if (typeof url !== 'string') return Promise.resolve({ ok: false })
