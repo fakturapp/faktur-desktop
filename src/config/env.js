@@ -4,6 +4,7 @@ const path = require('node:path')
 const dotenv = require('dotenv')
 const { app } = require('electron')
 
+// ---------- .env loader ----------
 const envPath = path.join(
   app?.isPackaged ? path.dirname(app.getAppPath()) : process.cwd(),
   '.env'
@@ -33,13 +34,16 @@ function optional(name, fallback) {
   return process.env[name] ?? fallback
 }
 
+// ---------- Frozen config object ----------
+// NOTE: client_secret intentionally REMOVED — the desktop is a public
+// OAuth client and relies exclusively on PKCE. Any secret embedded in
+// the binary is extractable and provides no real protection.
 const config = Object.freeze({
   env: optional('FAKTUR_ENV', 'production'),
   devtools: optional('FAKTUR_DEVTOOLS', 'false') === 'true',
 
   oauth: {
     clientId: required('FAKTUR_OAUTH_CLIENT_ID'),
-    clientSecret: required('FAKTUR_OAUTH_CLIENT_SECRET'),
     scopes: parseScopes(
       optional(
         'FAKTUR_OAUTH_SCOPES',
@@ -55,10 +59,7 @@ const config = Object.freeze({
 
   urls: {
     dashboard: optional('FAKTUR_DASHBOARD_URL', 'https://dash.fakturapp.cc'),
-    authorize: optional(
-      'FAKTUR_AUTHORIZE_URL',
-      'https://dash.fakturapp.cc/oauth/authorize'
-    ),
+    authorize: optional('FAKTUR_AUTHORIZE_URL', 'https://dash.fakturapp.cc/oauth/authorize'),
   },
 
   callback: {

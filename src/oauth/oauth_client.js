@@ -12,6 +12,7 @@ class OauthClientError extends Error {
   }
 }
 
+// ---------- URL helpers ----------
 function buildAuthorizeUrl({ redirectUri, state, codeChallenge, codeChallengeMethod }) {
   const base = config.urls.authorize
   const url = new URL(base)
@@ -31,11 +32,19 @@ function generateState(bytes = 16) {
   return crypto.randomBytes(bytes).toString('base64url')
 }
 
+// ---------- HTTP core ----------
+// Desktop is a PUBLIC OAuth client: we rely on PKCE (RFC 7636) rather
+// than an embedded client_secret. The secret would be trivially
+// extractable from the packaged binary and provides no real protection.
 async function postForm(path, body) {
   const url = `${config.api.baseUrl}${config.api.prefix}${path}`
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'User-Agent': 'FakturDesktop/2.0',
+    },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(15_000),
   })
@@ -55,11 +64,11 @@ async function postForm(path, body) {
   return data
 }
 
+// ---------- Grants ----------
 async function exchangeCodeForToken({ code, redirectUri, codeVerifier, deviceInfo }) {
   return postForm('/oauth/token', {
     grant_type: 'authorization_code',
     client_id: config.oauth.clientId,
-    client_secret: config.oauth.clientSecret,
     code,
     redirect_uri: redirectUri,
     code_verifier: codeVerifier,
@@ -73,7 +82,6 @@ async function refreshAccessToken({ refreshToken }) {
   return postForm('/oauth/token', {
     grant_type: 'refresh_token',
     client_id: config.oauth.clientId,
-    client_secret: config.oauth.clientSecret,
     refresh_token: refreshToken,
   })
 }
@@ -82,7 +90,6 @@ async function revokeToken({ token, hint }) {
   try {
     await postForm('/oauth/revoke', {
       client_id: config.oauth.clientId,
-      client_secret: config.oauth.clientSecret,
       token,
       token_type_hint: hint || 'access_token',
     })
