@@ -14,6 +14,6 @@
 //   node scripts/generate-signing-key.js
 
 const OFFICIAL_PUBLIC_KEY_SPKI_BASE64 =
-  'MCowBQYDK2VwAyEAF6/iYqld90qDYCCIvOAIjCvvUPV1B9WteR0ktd5fzOg='
+  'MCowBQYDK2VwAyEAjtiVBX2ZylLz+cSmX2k5JMxYV1olEzrgBc1CtfMRObI='
 
 module.exports = { OFFICIAL_PUBLIC_KEY_SPKI_BASE64 }
