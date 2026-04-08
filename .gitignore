@@ -8,6 +8,10 @@ out/
 .env.local
 src/config/env.bundle.bin
 
+# Generated build artifacts
+build/icon.png
+build/icon.ico
+
 # Logs
 *.log
 npm-debug.log*
