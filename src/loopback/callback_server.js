@@ -82,23 +82,11 @@ const PAGE_SHELL = (title, body) => `<!doctype html>
       filter: drop-shadow(0 8px 20px rgba(99, 102, 241, 0.35));
     }
     .brand-logo svg { width: 100%; height: 100%; display: block; }
-    .brand-text {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      line-height: 1.1;
-    }
     .brand-name {
       font-size: 18px;
       font-weight: 700;
       color: var(--fg);
       letter-spacing: -0.02em;
-    }
-    .brand-sub {
-      font-size: 11px;
-      color: var(--fg-muted);
-      letter-spacing: 0.02em;
-      margin-top: 2px;
     }
     .card {
       background: var(--bg-card);
@@ -145,19 +133,13 @@ const PAGE_SHELL = (title, body) => `<!doctype html>
     }
     .icon.ok    { background: var(--emerald-soft); color: var(--emerald); }
     .icon.error { background: var(--destructive-soft); color: var(--destructive); }
-    .halo {
-      position: absolute;
-      inset: -4px;
-      border-radius: 26px;
-      filter: blur(20px);
-      opacity: 0.45;
-      animation: pulse 2s ease-in-out infinite;
+    .icon.appear {
+      animation: iconAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
     }
-    .halo.ok    { background: var(--emerald); }
-    .halo.error { background: var(--destructive); }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.3;  transform: scale(0.94); }
-      50%      { opacity: 0.55; transform: scale(1.08); }
+    @keyframes iconAppear {
+      0%   { opacity: 0; transform: scale(0.4); }
+      60%  { opacity: 1; transform: scale(1.08); }
+      100% { opacity: 1; transform: scale(1); }
     }
     h1 {
       font-size: 22px;
@@ -210,11 +192,6 @@ const PAGE_SHELL = (title, body) => `<!doctype html>
       font-weight: 800;
       box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
     }
-    .countdown {
-      margin-top: 18px;
-      font-size: 11px;
-      color: #606060;
-    }
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(12px); }
       to   { opacity: 1; transform: translateY(0);    }
@@ -235,10 +212,7 @@ const FAKTUR_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40
 
 const BRAND_HEADER = `<div class="brand">
   <div class="brand-logo">${FAKTUR_LOGO_SVG}</div>
-  <div class="brand-text">
-    <span class="brand-name">Faktur Desktop</span>
-    <span class="brand-sub">Authentification sécurisée</span>
-  </div>
+  <span class="brand-name">Faktur Desktop</span>
 </div>`
 
 const SUCCESS_HTML = PAGE_SHELL(
@@ -256,12 +230,10 @@ const SUCCESS_HTML = PAGE_SHELL(
     </div>
     <div id="stage-success" class="stage">
       <div class="icon-wrap">
-        <div class="halo ok"></div>
-        <div class="icon ok">${CHECK_SVG}</div>
+        <div class="icon ok appear">${CHECK_SVG}</div>
       </div>
       <h1>Connexion réussie</h1>
       <p>Vous pouvez fermer cette fenêtre et revenir à l'application Faktur Desktop.</p>
-      <div class="countdown" id="countdown"></div>
     </div>
   </div>
   <script>
@@ -270,14 +242,6 @@ const SUCCESS_HTML = PAGE_SHELL(
       var success = document.getElementById('stage-success');
       if (progress) progress.classList.remove('visible');
       if (success) success.classList.add('visible');
-      var n = 3;
-      var el = document.getElementById('countdown');
-      if (el) el.textContent = 'Fermeture automatique dans 3 secondes…';
-      var int = setInterval(function () {
-        n--;
-        if (n <= 0) { clearInterval(int); window.close(); return; }
-        if (el) el.textContent = 'Fermeture automatique dans ' + n + ' secondes…';
-      }, 1000);
     }, 500);
   </script>`
 )
@@ -288,8 +252,7 @@ const ERROR_HTML = (message) =>
     `${BRAND_HEADER}
     <div class="card">
       <div class="icon-wrap">
-        <div class="halo error"></div>
-        <div class="icon error">${X_SVG}</div>
+        <div class="icon error appear">${X_SVG}</div>
       </div>
       <h1>Connexion impossible</h1>
       <p>Une erreur s'est produite pendant l'autorisation. Retournez à l'application pour réessayer.</p>
