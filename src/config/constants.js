@@ -1,9 +1,10 @@
 'use strict'
 
 module.exports = Object.freeze({
-  APP_NAME: 'Faktur',
+  APP_NAME: 'Faktur Desktop',
   APP_ID: 'cc.fakturapp.desktop',
 
+  // ---------- IPC channels ----------
   ipc: {
     SESSION_STATE_CHANGED: 'session:state-changed',
     SESSION_GET_STATE: 'session:get-state',
@@ -11,8 +12,10 @@ module.exports = Object.freeze({
     AUTH_LOGOUT: 'auth:logout',
     VAULT_OPEN_UNLOCK: 'vault:open-unlock',
     OPEN_EXTERNAL: 'window:open-external',
+    GET_APP_INFO: 'app:get-info',
   },
 
+  // ---------- Session state enum ----------
   session: {
     UNAUTHENTICATED: 'unauthenticated',
     AUTHENTICATING: 'authenticating',
@@ -22,6 +25,7 @@ module.exports = Object.freeze({
     ERROR: 'error',
   },
 
+  // ---------- Secure store keys ----------
   storageKeys: {
     ACCESS_TOKEN: 'access_token',
     REFRESH_TOKEN: 'refresh_token',

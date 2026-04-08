@@ -5,6 +5,7 @@ const constants = require('../config/constants')
 const tokenManager = require('../oauth/token_manager')
 const config = require('../config/env')
 
+// ---------- IPC registration ----------
 function registerIpcHandlers({ onSessionChange }) {
   const { ipc } = constants
 
@@ -39,6 +40,15 @@ function registerIpcHandlers({ onSessionChange }) {
     return { ok: true }
   })
 
+  ipcMain.handle(ipc.GET_APP_INFO, () => {
+    return {
+      version: '2.0.0',
+      platform: process.platform,
+      isDesktop: true,
+    }
+  })
+
+  // ---------- Session forwarder ----------
   tokenManager.onStateChange((payload) => {
     onSessionChange?.(payload)
   })
