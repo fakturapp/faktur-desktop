@@ -16,6 +16,7 @@
       --bg:              #080808;
       --bg-elev:         #111111;
       --bg-card:         #141414;
+      --bg-left:         #0d0d0f;
       --border:          #222222;
       --border-soft:     #1c1c1c;
       --fg:              #efefef;
@@ -45,7 +46,9 @@
       background: var(--bg);
       color: var(--fg);
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       letter-spacing: -0.01em;
+      overflow: hidden;
     }
 
     body {
@@ -53,9 +56,8 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 32px 24px;
+      padding: 20px;
       position: relative;
-      overflow: hidden;
     }
 
     body::before {
@@ -63,22 +65,22 @@
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(ellipse at 10% 10%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-        radial-gradient(ellipse at 90% 90%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+        radial-gradient(ellipse at 8% 8%, rgba(99, 102, 241, 0.10) 0%, transparent 45%),
+        radial-gradient(ellipse at 92% 92%, rgba(139, 92, 246, 0.07) 0%, transparent 45%);
       pointer-events: none;
     }
 
     main {
       position: relative;
       width: 100%;
-      max-width: 400px;
+      max-width: 780px;
       z-index: 1;
     }
 
     /* ---------- Disconnect banner ---------- */
     .banner {
       display: none;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       padding: 12px 14px;
       border-radius: 14px;
       border: 1px solid var(--destructive-brd);
@@ -112,76 +114,145 @@
       color: var(--fg);
     }
 
-    /* ---------- Auth card ---------- */
-    .card {
-      padding: 40px 32px;
+    /* ---------- Split card ---------- */
+    .split {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      min-height: 420px;
       border-radius: 24px;
+      overflow: hidden;
       background: var(--bg-card);
       border: 1px solid var(--border);
       box-shadow:
-        0 10px 40px rgba(0, 0, 0, 0.4),
+        0 20px 60px rgba(0, 0, 0, 0.5),
         0 0 0 1px rgba(255, 255, 255, 0.02);
     }
 
-    .logo-wrap {
+    /* ---------- Left panel — brand + features ---------- */
+    .left {
       position: relative;
-      width: 76px;
-      height: 76px;
-      margin: 0 auto 22px;
+      padding: 40px 38px;
+      background: var(--bg-left);
+      border-right: 1px solid var(--border-soft);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-    .logo {
+    .left::before {
+      content: '';
       position: absolute;
       inset: 0;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.12) 0%, transparent 55%),
+        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      position: relative;
+    }
+    .brand img {
+      width: 44px;
+      height: 44px;
+      filter: drop-shadow(0 8px 22px rgba(99, 102, 241, 0.45));
+    }
+    .brand-name {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--fg);
+      letter-spacing: -0.02em;
+    }
+    .left h1 {
+      position: relative;
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0 0 10px;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+    }
+    .left-tagline {
+      position: relative;
+      font-size: 13px;
+      color: var(--fg-muted);
+      margin: 0 0 26px;
+      line-height: 1.55;
+    }
+    .features {
+      position: relative;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--fg-muted);
+      line-height: 1.45;
+    }
+    .features .ico {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: var(--primary-soft);
+      border: 1px solid rgba(99, 102, 241, 0.22);
+      color: var(--primary);
       display: flex;
       align-items: center;
       justify-content: center;
-      filter: drop-shadow(0 12px 32px rgba(99, 102, 241, 0.4));
-      z-index: 2;
-      transition: transform 0.3s ease;
+      flex-shrink: 0;
+      margin-top: -1px;
     }
-    .logo img { width: 100%; height: 100%; display: block; }
-    .halo {
-      position: absolute;
-      inset: 0;
-      border-radius: 26px;
-      background: var(--primary);
-      filter: blur(28px);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 1;
+    .features .ico svg { width: 13px; height: 13px; }
+    .features strong {
+      display: block;
+      color: var(--fg);
+      font-weight: 600;
+      font-size: 12px;
+      margin-bottom: 1px;
     }
-    .halo.pulsing {
-      opacity: 0.45;
-      animation: pulse 1.8s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.28; transform: scale(0.94); }
-      50%      { opacity: 0.55; transform: scale(1.08); }
+    .left-footer {
+      position: relative;
+      margin-top: auto;
+      padding-top: 26px;
+      font-size: 10px;
+      color: var(--fg-mute-2);
+      letter-spacing: 0.02em;
     }
 
-    h1 {
+    /* ---------- Right panel — actions ---------- */
+    .right {
+      padding: 44px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .right h2 {
       margin: 0 0 6px;
       font-size: 20px;
       font-weight: 700;
-      text-align: center;
       letter-spacing: -0.02em;
     }
-    .subtitle {
-      margin: 0 0 28px;
+    .right-sub {
+      margin: 0 0 26px;
       font-size: 13px;
       color: var(--fg-muted);
-      text-align: center;
       line-height: 1.55;
     }
 
-    /* ---------- Primary button ---------- */
-    button.primary {
+    /* ---------- Buttons ---------- */
+    .btn {
       width: 100%;
       height: 46px;
       border: 0;
-      border-radius: 14px;
-      background: var(--primary);
-      color: white;
+      border-radius: 12px;
       font-family: inherit;
       font-size: 13px;
       font-weight: 600;
@@ -192,15 +263,35 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
-      box-shadow: 0 8px 22px rgba(99, 102, 241, 0.28);
     }
-    button.primary:hover {
+    .btn.primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 8px 22px rgba(99, 102, 241, 0.3);
+    }
+    .btn.primary:hover {
       background: var(--primary-hover);
       transform: translateY(-1px);
-      box-shadow: 0 10px 28px rgba(99, 102, 241, 0.38);
+      box-shadow: 0 10px 28px rgba(99, 102, 241, 0.4);
     }
-    button.primary:active { transform: translateY(0); }
-    button.primary:disabled {
+    .btn.primary:active { transform: translateY(0); }
+    .btn.primary.success {
+      background: var(--emerald-soft);
+      color: var(--emerald);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      box-shadow: none;
+    }
+    .btn.outline {
+      background: transparent;
+      color: var(--fg);
+      border: 1px solid var(--border);
+    }
+    .btn.outline:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+    }
+    .btn:disabled {
       opacity: 1;
       cursor: default;
       transform: none;
@@ -209,14 +300,27 @@
       border: 1px solid var(--border);
       box-shadow: none;
     }
-    button.primary.success {
-      background: var(--emerald-soft);
-      color: var(--emerald);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      box-shadow: none;
+
+    .separator {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 14px 0;
+      color: var(--fg-mute-2);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .separator::before,
+    .separator::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
     }
 
-    /* ---------- Faktur spinner (circular mask) ---------- */
+    /* ---------- Spinner + check ---------- */
     .faktur-spinner {
       display: inline-block;
       width: 16px;
@@ -232,13 +336,7 @@
       border-top-color: currentColor;
       animation: spin 0.8s linear infinite;
     }
-    .faktur-spinner.dark::after {
-      border-color: rgba(99, 102, 241, 0.25);
-      border-top-color: var(--primary);
-    }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ---------- Check icon (success state) ---------- */
     .check-icon {
       display: inline-flex;
       width: 16px;
@@ -262,23 +360,17 @@
     }
     .error.visible { display: block; }
 
-    /* ---------- Footer ---------- */
-    .footer {
-      margin-top: 22px;
-      text-align: center;
-      font-size: 10px;
-      color: var(--fg-mute-2);
-      letter-spacing: 0.02em;
-    }
-
+    /* ---------- Appear animation ---------- */
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
     main { animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
 
-    @media (max-width: 420px) {
-      .card { padding: 32px 24px; }
+    /* ---------- Narrow window fallback ---------- */
+    @media (max-width: 720px) {
+      .split { grid-template-columns: 1fr; }
+      .left { border-right: 0; border-bottom: 1px solid var(--border-soft); }
     }
   </style>
 </head>
@@ -293,26 +385,77 @@
       </div>
     </div>
 
-    <!-- ---------- Auth card ---------- -->
-    <div class="card">
-      <div class="logo-wrap">
-        <div id="halo" class="halo"></div>
-        <div class="logo"><img src="./assets/logo.svg" alt="Faktur Desktop" /></div>
-      </div>
-      <h1 id="title">Bienvenue sur Faktur Desktop</h1>
-      <p id="subtitle" class="subtitle">
-        Connectez-vous à votre compte via votre navigateur. Votre mot de passe
-        ne transite jamais par cette application.
-      </p>
-      <button id="connect" class="primary" type="button">
-        <span id="icon-slot"></span>
-        <span id="label">Se connecter avec Faktur</span>
-      </button>
-      <div id="error" class="error"></div>
-    </div>
+    <!-- ---------- Split card ---------- -->
+    <div class="split">
 
-    <p class="footer">Faktur Desktop · v<span id="app-version">2.1.0</span></p>
+      <!-- ---------- Left — brand + features ---------- -->
+      <aside class="left">
+        <div class="brand">
+          <img src="./assets/logo.svg" alt="Faktur" />
+          <span class="brand-name">Faktur Desktop</span>
+        </div>
+
+        <h1>Votre facturation<br />professionnelle, sécurisée.</h1>
+        <p class="left-tagline">
+          Gérez factures, devis, clients et équipes dans une application
+          chiffrée bout-en-bout, sans jamais compromettre vos données.
+        </p>
+
+        <ul class="features">
+          <li>
+            <span class="ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>
+            </span>
+            <span><strong>Ultra rapide</strong>Factures et devis en quelques secondes.</span>
+          </li>
+          <li>
+            <span class="ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <span><strong>Zéro-access</strong>Vos données sont chiffrées avec votre mot de passe.</span>
+          </li>
+          <li>
+            <span class="ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <span><strong>Multi-équipes</strong>Collaboration temps réel entre tous vos collègues.</span>
+          </li>
+          <li>
+            <span class="ico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+            </span>
+            <span><strong>Assistance IA</strong>Génération de documents guidée par l'intelligence artificielle.</span>
+          </li>
+        </ul>
+
+        <p class="left-footer">Faktur Desktop · v<span id="app-version">2.1.0</span></p>
+      </aside>
+
+      <!-- ---------- Right — actions ---------- -->
+      <section class="right">
+        <h2>Bienvenue</h2>
+        <p class="right-sub">
+          Connectez-vous à votre compte Faktur ou créez-en un en quelques
+          secondes. Votre mot de passe ne transite jamais par cette
+          application.
+        </p>
+
+        <button id="connect" class="btn primary" type="button">
+          <span id="icon-slot"></span>
+          <span id="label">Se connecter avec Faktur</span>
+        </button>
+
+        <div class="separator">ou</div>
+
+        <button id="register" class="btn outline" type="button">
+          Créer un compte Faktur
+        </button>
+
+        <div id="error" class="error"></div>
+      </section>
+    </div>
   </main>
+
   <script src="./js/login.js"></script>
 </body>
 </html>

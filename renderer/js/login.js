@@ -2,15 +2,13 @@
 
 // ---------- Element refs ----------
 const button = document.getElementById('connect')
+const registerBtn = document.getElementById('register')
 const label = document.getElementById('label')
 const iconSlot = document.getElementById('icon-slot')
-const halo = document.getElementById('halo')
 const errorBox = document.getElementById('error')
 const banner = document.getElementById('banner')
 const bannerTitle = document.getElementById('banner-title')
 const bannerMessage = document.getElementById('banner-message')
-const title = document.getElementById('title')
-const subtitle = document.getElementById('subtitle')
 
 // ---------- Disconnect banner strings ----------
 const DISCONNECT_MESSAGES = {
@@ -106,39 +104,39 @@ function setStage(stage) {
   switch (stage) {
     case 'idle':
       button.disabled = false
+      if (registerBtn) registerBtn.disabled = false
       iconSlot.innerHTML = ''
       label.textContent = 'Se connecter avec Faktur'
-      halo.classList.remove('pulsing')
       break
 
     case 'opening_browser':
       button.disabled = true
+      if (registerBtn) registerBtn.disabled = true
       iconSlot.innerHTML = SPINNER_HTML
       label.textContent = 'Ouverture du navigateur…'
-      halo.classList.add('pulsing')
       break
 
     case 'waiting_callback':
       button.disabled = true
+      if (registerBtn) registerBtn.disabled = true
       iconSlot.innerHTML = SPINNER_HTML
       label.textContent = 'En attente de connexion…'
-      halo.classList.add('pulsing')
       break
 
     case 'received_callback':
     case 'exchanging':
       button.disabled = true
+      if (registerBtn) registerBtn.disabled = true
       iconSlot.innerHTML = SPINNER_HTML
       label.textContent = 'Connexion en cours…'
-      halo.classList.add('pulsing')
       break
 
     case 'success':
       button.disabled = true
+      if (registerBtn) registerBtn.disabled = true
       button.classList.add('success')
       iconSlot.innerHTML = CHECK_HTML
       label.textContent = 'Connexion réussie'
-      halo.classList.remove('pulsing')
       break
 
     default:
@@ -146,13 +144,13 @@ function setStage(stage) {
   }
 }
 
-// ---------- Click handler ----------
-button.addEventListener('click', async () => {
+// ---------- Click handlers ----------
+async function startAuth(intent) {
   clearError()
   banner.classList.remove('visible')
   setStage('opening_browser')
   try {
-    const result = await window.faktur.startAuth()
+    const result = await window.faktur.startAuth({ intent })
     if (!result?.ok) {
       showError(result?.error || "Impossible de démarrer l'authentification")
       setStage('idle')
@@ -161,7 +159,12 @@ button.addEventListener('click', async () => {
     showError(err?.message || 'Erreur inattendue')
     setStage('idle')
   }
-})
+}
+
+button.addEventListener('click', () => startAuth('login'))
+if (registerBtn) {
+  registerBtn.addEventListener('click', () => startAuth('register'))
+}
 
 // ---------- Session state sub-step listener ----------
 if (window.faktur?.onSessionChange) {
