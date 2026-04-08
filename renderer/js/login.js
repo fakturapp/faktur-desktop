@@ -145,6 +145,12 @@ function setStage(stage) {
 }
 
 // ---------- Click handlers ----------
+function isTimeoutError(msg) {
+  if (!msg) return false
+  const lower = String(msg).toLowerCase()
+  return lower.includes('timeout') || lower.includes('expir')
+}
+
 async function startAuth(intent) {
   clearError()
   banner.classList.remove('visible')
@@ -152,7 +158,13 @@ async function startAuth(intent) {
   try {
     const result = await window.faktur.startAuth({ intent })
     if (!result?.ok) {
-      showError(result?.error || "Impossible de démarrer l'authentification")
+      if (isTimeoutError(result?.error)) {
+        showError(
+          'La demande de connexion a expiré. Vous avez 5 minutes pour vous connecter dans le navigateur — veuillez réessayer.'
+        )
+      } else {
+        showError(result?.error || "Impossible de démarrer l'authentification")
+      }
       setStage('idle')
     }
   } catch (err) {
@@ -181,7 +193,13 @@ if (window.faktur?.onSessionChange) {
     }
     if (payload.state === 'error') {
       setStage('idle')
-      showError(payload.error || 'Erreur inconnue')
+      if (isTimeoutError(payload.error)) {
+        showError(
+          'La demande de connexion a expiré. Vous avez 5 minutes pour vous connecter dans le navigateur — veuillez réessayer.'
+        )
+      } else {
+        showError(payload.error || 'Erreur inconnue')
+      }
     }
   })
 }
