@@ -19,7 +19,7 @@
   },
   "build": {
     "appId": "cc.fakturapp.desktop",
-    "productName": "Faktur",
+    "productName": "Faktur Desktop",
     "directories": {
       "output": "dist"
     },
@@ -27,16 +27,36 @@
       "src/**/*",
       "renderer/**/*",
       "assets/**/*",
-      ".env",
-      "package.json"
+      "package.json",
+      "!**/*.map",
+      "!**/*.md",
+      "!**/.env*"
     ],
+    "asar": true,
+    "asarUnpack": [],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "loadBrowserProcessSpecificV8Snapshot": false,
+      "grantFileProtocolExtraPrivileges": false
+    },
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "signingHashAlgorithms": ["sha256"],
+      "signAndEditExecutable": true
     },
     "mac": {
       "target": "dmg",
-      "icon": "assets/icon.icns"
+      "icon": "assets/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "linux": {
       "target": "AppImage",
