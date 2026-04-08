@@ -16,6 +16,13 @@ const tokenManager = require('../oauth/token_manager')
 const { createLoginWindow } = require('../windows/login_window')
 const { createShellWindow } = require('../windows/shell_window')
 const { registerIpcHandlers } = require('../ipc/ipc_handlers')
+const {
+  enforceLaunchFlagPolicy,
+  installGlobalContentsGuard,
+} = require('../security/hardening')
+
+// ---------- Launch-flag policy (must run before anything else) ----------
+enforceLaunchFlagPolicy()
 
 // ---------- Single-instance lock ----------
 const gotTheLock = app.requestSingleInstanceLock()
@@ -73,20 +80,13 @@ async function openForState(state, options = {}) {
 
 // ---------- Bootstrap ----------
 async function bootstrap() {
-  app.on('web-contents-created', (_event, contents) => {
-    contents.on('will-navigate', (evt, url) => {
-      const allowed = [
-        config.urls.dashboard,
-        config.api.baseUrl,
-        'http://127.0.0.1',
-        'http://localhost',
-      ]
-      if (!allowed.some((prefix) => url.startsWith(prefix))) {
-        evt.preventDefault()
-      }
-    })
-    contents.setWindowOpenHandler(() => ({ action: 'deny' }))
-  })
+  installGlobalContentsGuard([
+    config.urls.dashboard,
+    config.api.baseUrl,
+    'http://127.0.0.1',
+    'http://localhost',
+    'file://',
+  ])
 
   registerIpcHandlers({
     onSessionChange: async (payload) => {
