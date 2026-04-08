@@ -10,19 +10,37 @@ const GITHUB_LATEST_URL =
 const INSTALLER_FILENAME = 'FakturDesktop-Installer.exe'
 
 function parseVersion(raw) {
-  const clean = String(raw || '').replace(/^v/i, '')
-  const parts = clean.split('-')[0].split('.').map((n) => Number.parseInt(n, 10))
-  return [parts[0] || 0, parts[1] || 0, parts[2] || 0]
+  if (raw == null) return null
+  const str = String(raw).trim()
+  const match = str.match(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/)
+  if (!match) return null
+  return [
+    Number.parseInt(match[1], 10) || 0,
+    Number.parseInt(match[2] || '0', 10) || 0,
+    Number.parseInt(match[3] || '0', 10) || 0,
+  ]
 }
 
 function semverGt(a, b) {
-  const pa = parseVersion(a)
-  const pb = parseVersion(b)
+  const pa = Array.isArray(a) ? a : parseVersion(a)
+  const pb = Array.isArray(b) ? b : parseVersion(b)
+  if (!pa || !pb) return false
   for (let i = 0; i < 3; i++) {
     if (pa[i] > pb[i]) return true
     if (pa[i] < pb[i]) return false
   }
   return false
+}
+
+function extractVersionFromRelease(data) {
+  const candidates = [data?.tag_name, data?.name]
+  for (const candidate of candidates) {
+    const parsed = parseVersion(candidate)
+    if (parsed && (parsed[0] > 0 || parsed[1] > 0 || parsed[2] > 0)) {
+      return { parsed, raw: candidate }
+    }
+  }
+  return null
 }
 
 function getCurrentVersion() {
@@ -64,10 +82,20 @@ async function checkForUpdate({ silent = false } = {}) {
       return null
     }
     const data = await res.json()
-    const remoteTag = data?.tag_name
     const currentVersion = getCurrentVersion()
+    const currentParsed = parseVersion(currentVersion) || [0, 0, 0]
 
-    if (!remoteTag || !semverGt(remoteTag, currentVersion)) {
+    const remote = extractVersionFromRelease(data)
+    if (!remote) {
+      cachedResult = null
+      emit({
+        type: 'error',
+        message: 'Could not parse a semver from the release tag or name',
+      })
+      return null
+    }
+
+    if (!semverGt(remote.parsed, currentParsed)) {
       cachedResult = null
       emit({ type: 'none', current: currentVersion })
       return null
@@ -78,13 +106,13 @@ async function checkForUpdate({ silent = false } = {}) {
       cachedResult = null
       emit({
         type: 'error',
-        message: `Release ${remoteTag} has no ${INSTALLER_FILENAME} asset`,
+        message: `Release ${remote.raw} has no ${INSTALLER_FILENAME} asset`,
       })
       return null
     }
 
     const info = {
-      version: String(remoteTag).replace(/^v/i, ''),
+      version: remote.parsed.join('.'),
       currentVersion,
       downloadUrl: asset.browser_download_url,
       size: asset.size,
