@@ -1,6 +1,6 @@
 'use strict'
 
-const { app } = require('electron')
+const { app, Menu } = require('electron')
 
 // ---------- Dangerous launch-flag filter ----------
 // Some Chromium/Electron flags silently disable critical security
@@ -21,6 +21,8 @@ const DANGEROUS_FLAGS = [
   '--inspect-brk',
   '--inspect-port',
   '--js-flags=--inspect',
+  '--enable-logging',
+  '--v=',
 ]
 
 function isDangerousArg(raw) {
@@ -39,26 +41,34 @@ function enforceLaunchFlagPolicy() {
     throw new Error('Dangerous launch flags detected')
   }
 
-  // Preemptively remove any switch Electron may set by default.
   try {
     app.commandLine.removeSwitch('remote-debugging-port')
     app.commandLine.removeSwitch('remote-debugging-pipe')
     app.commandLine.removeSwitch('inspect')
     app.commandLine.removeSwitch('inspect-brk')
+    app.commandLine.removeSwitch('js-flags')
+    app.commandLine.removeSwitch('enable-logging')
   } catch {
     /* pre-ready; ignore */
   }
+
+  if (process.env.NODE_OPTIONS) {
+    delete process.env.NODE_OPTIONS
+  }
 }
 
-// ---------- webPreferences validator ----------
-// Any BrowserWindow we create MUST pass through this check to guarantee
-// a secure baseline. Call from window factories before `new BrowserWindow`.
+// ---------- webPreferences baseline validator ----------
+// Every BrowserWindow factory must pass its prefs through this check.
+// In production all flags are forced to their strictest value. In dev,
+// devTools can stay on but everything else is still enforced.
 const REQUIRED_PREFS = {
   contextIsolation: true,
   nodeIntegration: false,
   webSecurity: true,
   allowRunningInsecureContent: false,
   experimentalFeatures: false,
+  sandbox: true,
+  webviewTag: false,
 }
 
 function assertSecureWebPreferences(windowName, prefs) {
@@ -68,6 +78,9 @@ function assertSecureWebPreferences(windowName, prefs) {
       violations.push(`${key}=${prefs[key]} (expected ${expected})`)
     }
   }
+  if (app.isPackaged && prefs.devTools === true) {
+    violations.push(`devTools=true (expected false in production)`)
+  }
   if (violations.length > 0) {
     throw new Error(
       `[hardening] BrowserWindow "${windowName}" failed security baseline: ${violations.join(', ')}`
@@ -75,7 +88,9 @@ function assertSecureWebPreferences(windowName, prefs) {
   }
 }
 
-// ---------- Navigation guard for any new web-contents ----------
+// ---------- Global web-contents guard ----------
+// Blocks any navigation, popup or <webview> attachment outside the
+// explicit allow-list. Runs for EVERY renderer Electron spawns.
 function installGlobalContentsGuard(allowedOrigins) {
   app.on('web-contents-created', (_event, contents) => {
     contents.on('will-navigate', (evt, url) => {
@@ -94,10 +109,143 @@ function installGlobalContentsGuard(allowedOrigins) {
       webPreferences.nodeIntegration = false
       webPreferences.contextIsolation = true
       webPreferences.webSecurity = true
+      webPreferences.sandbox = true
     })
 
     contents.setWindowOpenHandler(() => ({ action: 'deny' }))
   })
+}
+
+// ---------- DevTools lockdown for a specific window ----------
+// Blocks keyboard shortcuts that toggle DevTools, blocks the native
+// "Inspect element" context menu, and closes DevTools if anything else
+// tries to open it at runtime.
+function installDevToolsLockdown(win) {
+  if (!win || win.isDestroyed?.()) return
+
+  const contents = win.webContents
+
+  contents.on('before-input-event', (evt, input) => {
+    if (!input || input.type !== 'keyDown') return
+    const key = (input.key || '').toLowerCase()
+    const { control, shift, meta, alt } = input
+
+    // F12
+    if (key === 'f12') {
+      evt.preventDefault()
+      return
+    }
+    // Ctrl+Shift+I / Cmd+Opt+I — inspector
+    if ((control || meta) && shift && key === 'i') {
+      evt.preventDefault()
+      return
+    }
+    // Ctrl+Shift+J / Cmd+Opt+J — console
+    if ((control || meta) && shift && key === 'j') {
+      evt.preventDefault()
+      return
+    }
+    // Ctrl+Shift+C / Cmd+Opt+C — element picker
+    if ((control || meta) && shift && key === 'c') {
+      evt.preventDefault()
+      return
+    }
+    // Cmd+Opt+I/J/C on macOS
+    if (meta && alt && (key === 'i' || key === 'j' || key === 'c')) {
+      evt.preventDefault()
+      return
+    }
+    // Ctrl+R / Cmd+R — reload (block in production)
+    if (app.isPackaged && (control || meta) && key === 'r') {
+      evt.preventDefault()
+      return
+    }
+    // Ctrl+Shift+R / Cmd+Shift+R — hard reload
+    if (app.isPackaged && (control || meta) && shift && key === 'r') {
+      evt.preventDefault()
+    }
+  })
+
+  contents.on('context-menu', (evt) => {
+    if (app.isPackaged) evt.preventDefault()
+  })
+
+  if (app.isPackaged) {
+    contents.on('devtools-opened', () => {
+      try {
+        contents.closeDevTools()
+      } catch {
+        /* ignore */
+      }
+    })
+  }
+}
+
+// ---------- HTTPS-only network policy ----------
+// Blocks any outbound HTTP request except on the loopback interface
+// (needed for the OAuth callback during auth flow).
+function installHttpsOnlyGuard(sessionInstance) {
+  sessionInstance.webRequest.onBeforeRequest((details, callback) => {
+    try {
+      const url = new URL(details.url)
+      if (url.protocol === 'https:' || url.protocol === 'file:' || url.protocol === 'data:') {
+        return callback({})
+      }
+      if (
+        url.protocol === 'http:' &&
+        (url.hostname === '127.0.0.1' || url.hostname === 'localhost')
+      ) {
+        return callback({})
+      }
+      console.warn(`[hardening] blocking non-HTTPS request: ${details.url}`)
+      callback({ cancel: true })
+    } catch {
+      callback({ cancel: true })
+    }
+  })
+}
+
+// ---------- TLS certificate verification ----------
+// Leaves Chromium's built-in verification in place (return -3 = use
+// default verdict). We log any verification failure so a compromised
+// CA or a MITM attempt is immediately visible in the dev console.
+function installCertificateValidator(sessionInstance) {
+  sessionInstance.setCertificateVerifyProc((request, callback) => {
+    if (request.verificationResult !== 'net::OK') {
+      console.warn(
+        `[hardening] TLS verify warning for ${request.hostname}: ` +
+          `${request.verificationResult} (errorCode=${request.errorCode})`
+      )
+    }
+    callback(-3)
+  })
+}
+
+// ---------- Application menu wipeout ----------
+// Removes the entire native menu bar so there is no "View → Toggle
+// DevTools" entry. Must be called before creating any window.
+function removeApplicationMenu() {
+  Menu.setApplicationMenu(null)
+}
+
+// ---------- Runtime debugger detection ----------
+// Polls process.debugPort. Non-zero = Node inspector attached. Quits
+// immediately. Not foolproof against native debuggers (x64dbg, Frida)
+// but catches the most common remote-debugging scenarios.
+function startDebuggerWatchdog(intervalMs = 4000) {
+  if (!app.isPackaged) return
+  const interval = setInterval(() => {
+    try {
+      if (process.debugPort && process.debugPort > 0) {
+        console.error('[hardening] debugger attach detected — quitting')
+        clearInterval(interval)
+        app.exit(1)
+      }
+    } catch {
+      /* ignore */
+    }
+  }, intervalMs)
+  interval.unref?.()
 }
 
 module.exports = {
@@ -105,4 +253,9 @@ module.exports = {
   enforceLaunchFlagPolicy,
   assertSecureWebPreferences,
   installGlobalContentsGuard,
+  installDevToolsLockdown,
+  installHttpsOnlyGuard,
+  installCertificateValidator,
+  removeApplicationMenu,
+  startDebuggerWatchdog,
 }
