@@ -5,16 +5,12 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; script-src 'self';" />
   <title>Faktur — Connexion</title>
 
-  <!-- Lexend font to match the web dashboard -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    /* --------------------------------------------------------------
-     * Token system mirrored from the Faktur dashboard dark theme
-     * (apps/frontend/src/app/globals.css)
-     * -------------------------------------------------------------- */
+    /* ---------- Design tokens ---------- */
     :root {
       --bg:              #080808;
       --bg-elev:         #111111;
@@ -36,6 +32,7 @@
       --amber-brd:       rgba(245, 158, 11, 0.22);
     }
 
+    /* ---------- Base ---------- */
     * { box-sizing: border-box; }
 
     html, body {
@@ -60,9 +57,6 @@
       overflow: hidden;
     }
 
-    /* Subtle background texture — matches the dashboard's finder-window-bg
-       gradient with a primary glow in the top-left and a violet glow
-       in the bottom-right. */
     body::before {
       content: '';
       position: absolute;
@@ -80,7 +74,7 @@
       z-index: 1;
     }
 
-    /* Disconnect banner shown when we got kicked out of a previous session */
+    /* ---------- Disconnect banner ---------- */
     .banner {
       display: none;
       margin-bottom: 16px;
@@ -117,7 +111,7 @@
       color: var(--fg);
     }
 
-    /* Main auth card — same density as the dashboard bento blocks */
+    /* ---------- Auth card ---------- */
     .card {
       padding: 40px 32px;
       border-radius: 24px;
@@ -129,21 +123,18 @@
     }
 
     .logo {
-      width: 56px;
-      height: 56px;
+      width: 72px;
+      height: 72px;
       margin: 0 auto 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 18px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-      color: white;
-      font-family: 'Lexend', sans-serif;
-      font-weight: 800;
-      font-size: 26px;
-      box-shadow:
-        0 8px 24px rgba(99, 102, 241, 0.35),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      filter: drop-shadow(0 8px 24px rgba(99, 102, 241, 0.35));
+    }
+    .logo img {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     h1 {
@@ -161,6 +152,7 @@
       line-height: 1.55;
     }
 
+    /* ---------- Primary button ---------- */
     button.primary {
       width: 100%;
       height: 46px;
@@ -193,6 +185,7 @@
       box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
     }
 
+    /* ---------- Error ---------- */
     .error {
       margin-top: 14px;
       padding: 10px 12px;
@@ -206,6 +199,7 @@
     }
     .error.visible { display: block; }
 
+    /* ---------- Footer + spinner ---------- */
     .footer {
       margin-top: 22px;
       text-align: center;
@@ -237,7 +231,6 @@
 </head>
 <body>
   <main>
-    <!-- Disconnect banner (hidden by default, populated by login.js) -->
     <div id="banner" class="banner" role="alert">
       <span class="dot"></span>
       <div>
@@ -247,8 +240,8 @@
     </div>
 
     <div class="card">
-      <div class="logo">F</div>
-      <h1>Bienvenue sur Faktur</h1>
+      <div class="logo"><img src="./assets/logo.svg" alt="Faktur" /></div>
+      <h1>Bienvenue sur Faktur Desktop</h1>
       <p class="subtitle">
         Connectez-vous à votre compte via votre navigateur. Votre mot de passe
         ne transite jamais par cette application.
