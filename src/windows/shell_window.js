@@ -1,12 +1,17 @@
 'use strict'
 
 const path = require('node:path')
-const { BrowserWindow, shell, session } = require('electron')
+const { app, BrowserWindow, shell, session } = require('electron')
 const config = require('../config/env')
 const tokenManager = require('../oauth/token_manager')
 const { exchangeForDashboardSession } = require('../oauth/session_bridge')
 const { computeDesktopProofHeader } = require('../security/desktop_proof')
-const { assertSecureWebPreferences } = require('../security/hardening')
+const {
+  assertSecureWebPreferences,
+  installDevToolsLockdown,
+  installHttpsOnlyGuard,
+  installCertificateValidator,
+} = require('../security/hardening')
 
 // ---------- Constants ----------
 const DESKTOP_USER_AGENT_SUFFIX = 'FakturDesktop/2.0'
@@ -15,16 +20,19 @@ const SHELL_PARTITION = 'persist:faktur-desktop-shell'
 // ---------- Public factory ----------
 async function createShellWindow({ onFatalError } = {}) {
   const shellSession = session.fromPartition(SHELL_PARTITION)
+  installHttpsOnlyGuard(shellSession)
+  installCertificateValidator(shellSession)
 
   const webPreferences = {
     preload: path.join(__dirname, '..', '..', 'renderer', 'preload', 'shell_preload.js'),
     contextIsolation: true,
     nodeIntegration: false,
-    sandbox: false,
+    sandbox: true,
     webSecurity: true,
     allowRunningInsecureContent: false,
     experimentalFeatures: false,
-    devTools: config.devtools,
+    webviewTag: false,
+    devTools: !app.isPackaged,
     session: shellSession,
   }
   assertSecureWebPreferences('shell', webPreferences)
@@ -45,6 +53,9 @@ async function createShellWindow({ onFatalError } = {}) {
   const defaultUa = win.webContents.userAgent
   win.webContents.setUserAgent(`${defaultUa} ${DESKTOP_USER_AGENT_SUFFIX}`)
 
+  // ---------- Per-window DevTools lockdown ----------
+  installDevToolsLockdown(win)
+
   // ---------- Loading screen ----------
   const loadingPath = path.join(__dirname, '..', '..', 'renderer', 'loading.html')
   win.loadFile(loadingPath).catch(() => {})
@@ -55,11 +66,11 @@ async function createShellWindow({ onFatalError } = {}) {
   installPermissionBlocker(shellSession)
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url).catch(() => {})
+    if (typeof url === 'string' && /^https?:\/\//.test(url)) {
+      shell.openExternal(url).catch(() => {})
+    }
     return { action: 'deny' }
   })
-
-  if (config.devtools) win.webContents.openDevTools({ mode: 'detach' })
 
   // ---------- Session bridge + dashboard load ----------
   ;(async () => {
@@ -79,14 +90,14 @@ async function createShellWindow({ onFatalError } = {}) {
       return
     }
 
-    try {
-      await injectBootstrapScript(win, bridgedSession)
-    } catch (err) {
-      console.error('[shell] bootstrap injection failed:', err?.message || err)
-    }
-
     if (win.isDestroyed()) return
 
+    // The dashboard session is delivered via a URL hash fragment that
+    // the frontend reads on first render through consumeDesktopSessionHash.
+    // Fragments never reach the server, never show up in logs or
+    // referrers, and are readable synchronously before React mounts.
+    // This replaces the old CDP-debugger injection path which required
+    // sandbox:false — we can now ship a fully sandboxed shell.
     const sessionPayload = {
       t: bridgedSession.token,
       v: bridgedSession.vaultKey,
@@ -188,45 +199,6 @@ function installPermissionBlocker(sessionInstance) {
     const allowed = new Set(['clipboard-read', 'clipboard-sanitized-write'])
     callback(allowed.has(permission))
   })
-}
-
-// ---------- Bootstrap script injection ----------
-async function injectBootstrapScript(win, bridgedSession) {
-  const payload = JSON.stringify({
-    token: bridgedSession.token,
-    vaultKey: bridgedSession.vaultKey,
-    vaultLocked: !!bridgedSession.vaultLocked,
-  })
-
-  const script = `
-    (function () {
-      try {
-        var data = ${payload};
-        if (data.token) {
-          localStorage.setItem('faktur_token', data.token);
-        }
-        if (data.vaultKey) {
-          localStorage.setItem('faktur_vault_key', data.vaultKey);
-        }
-        localStorage.setItem('faktur_source', 'desktop');
-        if (data.vaultLocked) {
-          localStorage.setItem('faktur_vault_locked', '1');
-        } else {
-          localStorage.removeItem('faktur_vault_locked');
-        }
-      } catch (e) {
-        console.error('[faktur-desktop bootstrap]', e);
-      }
-    })();
-  `
-
-  try {
-    const debuggee = win.webContents.debugger
-    if (!debuggee.isAttached()) debuggee.attach('1.3')
-    await debuggee.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: script })
-  } catch (err) {
-    console.error('[shell] bootstrap injection failed:', err?.message || err)
-  }
 }
 
 module.exports = { createShellWindow, SHELL_PARTITION }
