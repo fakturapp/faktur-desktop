@@ -1,21 +1,5 @@
 'use strict'
 
-/**
- * Ephemeral loopback HTTP server used as the OAuth2 redirect target.
- *
- * The server binds to 127.0.0.1 on an OS-assigned port and awaits a
- * single GET on the configured path (/callback by default). When the
- * request arrives, we parse `code` and `state` from the query string,
- * respond with a tiny "vous pouvez fermer cette fenêtre" HTML page,
- * and immediately tear the server down. Anything that arrives after
- * the first response is refused.
- *
- * We also guard against 'state' mismatches: the caller passes in an
- * expected state value and the promise rejects if the incoming one
- * differs. That's the only thing stopping CSRF from another tab
- * racing into our callback listener first.
- */
-
 const http = require('node:http')
 const url = require('node:url')
 const config = require('../config/env')
@@ -27,14 +11,6 @@ class CallbackServerError extends Error {
     this.code = code
   }
 }
-
-/* -------------------------------------------------------------------
- * Dark Faktur themed HTML pages served by the loopback listener.
- * Mirror the dashboard's colour tokens (#080808 bg, #141414 card,
- * #222 border, #6366f1 primary) and the Lexend font used across the
- * rest of the app so the hand-off between browser and desktop feels
- * seamless.
- * ----------------------------------------------------------------- */
 
 const PAGE_SHELL = (title, body) => `<!doctype html>
 <html lang="fr">
@@ -246,14 +222,6 @@ const ERROR_HTML = (message) =>
     </div>`
   )
 
-/**
- * Starts the loopback listener and returns a promise that resolves
- * with the { code, state } tuple the browser hands us, or rejects on
- * timeout / error / mismatched state.
- *
- * @param {{ expectedState: string, timeoutMs?: number }} opts
- * @returns {{ wait: Promise<{code: string, state: string}>, redirectUri: string, close: () => void }}
- */
 function startCallbackServer({ expectedState, timeoutMs = 5 * 60 * 1000 }) {
   let resolve
   let reject
@@ -313,19 +281,13 @@ function startCallbackServer({ expectedState, timeoutMs = 5 * 60 * 1000 }) {
     }
   }
 
-  server.listen(config.callback.port, config.callback.host, () => {
-    const address = server.address()
-    const port = typeof address === 'object' && address ? address.port : config.callback.port
-    this.assignedPort = port
-  })
+  server.listen(config.callback.port, config.callback.host)
 
-  // Bail out if the browser never comes back.
   timer = setTimeout(() => {
     reject(new CallbackServerError('Authentication timeout', 'timeout'))
     close()
   }, timeoutMs)
 
-  // Expose the redirect URI computed from the actually-assigned port.
   const getRedirectUri = () => {
     const address = server.address()
     if (!address || typeof address !== 'object') {
@@ -334,8 +296,6 @@ function startCallbackServer({ expectedState, timeoutMs = 5 * 60 * 1000 }) {
     return `http://${config.callback.host}:${address.port}${config.callback.path}`
   }
 
-  // Small wait-for-listen helper so the caller can compute the redirect
-  // URI synchronously once the promise returned below resolves.
   const ready = new Promise((resReady) => {
     server.once('listening', resReady)
   })

@@ -1,12 +1,5 @@
 'use strict'
 
-/**
- * Low-level OAuth client — talks to the Faktur /oauth/token and
- * /oauth/revoke endpoints. This file contains zero UI logic and no
- * persistent state; it's a pure HTTP adapter so it can be unit-tested
- * against a mocked server.
- */
-
 const crypto = require('node:crypto')
 const config = require('../config/env')
 
@@ -62,10 +55,6 @@ async function postForm(path, body) {
   return data
 }
 
-/**
- * Exchanges an authorization code for a token pair. Called right after
- * the loopback server captures the callback.
- */
 async function exchangeCodeForToken({ code, redirectUri, codeVerifier, deviceInfo }) {
   return postForm('/oauth/token', {
     grant_type: 'authorization_code',
@@ -80,11 +69,6 @@ async function exchangeCodeForToken({ code, redirectUri, codeVerifier, deviceInf
   })
 }
 
-/**
- * Exchanges a refresh_token for a fresh token pair. The backend
- * rotates the refresh token on every call so we always persist the
- * brand-new one and drop the old one.
- */
 async function refreshAccessToken({ refreshToken }) {
   return postForm('/oauth/token', {
     grant_type: 'refresh_token',
@@ -94,9 +78,6 @@ async function refreshAccessToken({ refreshToken }) {
   })
 }
 
-/**
- * Revokes a token (logout). Never throws — revocation is best-effort.
- */
 async function revokeToken({ token, hint }) {
   try {
     await postForm('/oauth/revoke', {

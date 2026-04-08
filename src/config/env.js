@@ -1,11 +1,5 @@
 'use strict'
 
-/**
- * Loads the .env file from the app root and exposes a frozen config
- * object to the rest of the app. All env vars are validated up-front —
- * missing client credentials are treated as a fatal config error.
- */
-
 const path = require('node:path')
 const dotenv = require('dotenv')
 const { app } = require('electron')
@@ -16,9 +10,6 @@ const envPath = path.join(
 )
 dotenv.config({ path: envPath })
 
-/**
- * Parse a space- or comma-separated scope list from env into an array.
- */
 function parseScopes(raw) {
   if (!raw) return ['profile']
   return raw

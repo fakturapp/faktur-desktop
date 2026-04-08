@@ -1,17 +1,5 @@
 'use strict'
 
-/**
- * Stateful façade on top of the low-level oauth_client that:
- *
- *  1. Orchestrates a fresh authorization flow (PKCE + loopback).
- *  2. Persists and refreshes tokens via the secure store.
- *  3. Exposes a single `getAccessToken()` used by every authenticated
- *     request: it transparently refreshes expired tokens and wipes
- *     the store on revocation.
- *  4. Notifies subscribers of session state changes so the main
- *     process can push the latest status to the renderer.
- */
-
 const { shell } = require('electron')
 const os = require('node:os')
 const oauthClient = require('./oauth_client')
@@ -23,7 +11,6 @@ const constants = require('../config/constants')
 
 const { storageKeys, session: sessionStates } = constants
 
-/** Soft margin — refresh the access token if it expires in less than this. */
 const REFRESH_MARGIN_MS = 60 * 1000
 
 class TokenManager {
@@ -33,7 +20,6 @@ class TokenManager {
     this.currentFlow = null
   }
 
-  /** Subscribe to session state changes. Returns an unsubscribe fn. */
   onStateChange(cb) {
     this.listeners.add(cb)
     return () => this.listeners.delete(cb)
@@ -45,12 +31,11 @@ class TokenManager {
       try {
         cb({ state, ...extra })
       } catch {
-        /* ignore individual subscriber failures */
+        /* ignore */
       }
     }
   }
 
-  /** Lazy-checks the store and returns the current state on boot. */
   bootstrap() {
     const access = secureStore.get(storageKeys.ACCESS_TOKEN)
     const refresh = secureStore.get(storageKeys.REFRESH_TOKEN)
@@ -62,7 +47,6 @@ class TokenManager {
     return sessionStates.UNAUTHENTICATED
   }
 
-  /** Full OAuth flow — opens the system browser, waits for callback. */
   async startAuthorizationFlow() {
     if (this.currentFlow) return this.currentFlow.promise
 
@@ -81,11 +65,7 @@ class TokenManager {
       codeChallengeMethod,
     })
 
-    // Open in the real browser — this is the whole point of OAuth:
-    // no password ever touches Electron.
-    shell.openExternal(authorizeUrl).catch(() => {
-      /* user has no browser? they'll see the loopback timeout */
-    })
+    shell.openExternal(authorizeUrl).catch(() => {})
 
     const promise = (async () => {
       try {
@@ -116,11 +96,6 @@ class TokenManager {
     return promise
   }
 
-  /**
-   * Returns a valid access token, refreshing it transparently if
-   * needed. Throws if the session cannot be restored — the caller
-   * should then present the login screen.
-   */
   async getAccessToken() {
     const access = secureStore.get(storageKeys.ACCESS_TOKEN)
     const refresh = secureStore.get(storageKeys.REFRESH_TOKEN)
@@ -140,14 +115,15 @@ class TokenManager {
       this._persistTokenResponse(tokenResponse)
       return tokenResponse.access_token
     } catch (err) {
-      // Treat any refresh failure as a hard logout — the remote side
-      // may have revoked our tokens (admin panel, security rotation).
-      this.logout({ remoteRevoke: false, reason: 'refresh_failed' })
+      const status = err?.status || 0
+      const hardFail = status === 400 || status === 401
+      if (hardFail) {
+        await this.logout({ remoteRevoke: false, reason: 'refresh_failed' })
+      }
       throw err
     }
   }
 
-  /** Wipes the store, best-effort revokes, emits state. */
   async logout({ remoteRevoke = true, reason = 'user_logout' } = {}) {
     const access = secureStore.get(storageKeys.ACCESS_TOKEN)
     const refresh = secureStore.get(storageKeys.REFRESH_TOKEN)
@@ -162,7 +138,6 @@ class TokenManager {
     this._emit(sessionStates.UNAUTHENTICATED, { reason })
   }
 
-  /** Copies the token response payload into the encrypted store. */
   _persistTokenResponse(res) {
     const accessExpiresAt = Date.now() + Number(res.expires_in ?? 3600) * 1000
     const refreshExpiresAt = Date.now() + Number(res.refresh_expires_in ?? 0) * 1000

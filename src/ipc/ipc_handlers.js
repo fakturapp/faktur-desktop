@@ -5,11 +5,6 @@ const constants = require('../config/constants')
 const tokenManager = require('../oauth/token_manager')
 const config = require('../config/env')
 
-/**
- * Wires every main-process IPC handler. Called once at boot from
- * main.js. Handlers are idempotent and safe to call multiple times
- * in case the preload registers late.
- */
 function registerIpcHandlers({ onSessionChange }) {
   const { ipc } = constants
 
@@ -32,9 +27,6 @@ function registerIpcHandlers({ onSessionChange }) {
   })
 
   ipcMain.handle(ipc.VAULT_OPEN_UNLOCK, async () => {
-    // The vault unlock flow is handled in the browser, not in Electron —
-    // we open a dedicated page on the dashboard that ends the flow by
-    // redirecting back to a desktop-specific deep link.
     const url = `${config.urls.dashboard}/vault/unlock?source=desktop`
     await shell.openExternal(url).catch(() => {})
     return { ok: true }
@@ -47,7 +39,6 @@ function registerIpcHandlers({ onSessionChange }) {
     return { ok: true }
   })
 
-  // Forward session changes from the token manager to every renderer.
   tokenManager.onStateChange((payload) => {
     onSessionChange?.(payload)
   })

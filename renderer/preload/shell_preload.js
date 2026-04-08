@@ -2,11 +2,6 @@
 
 const { contextBridge, ipcRenderer } = require('electron')
 
-/**
- * Bridge exposed to the authenticated shell. The shell loads the real
- * dashboard from dash.fakturapp.cc so we only need the bare minimum
- * here — logout + vault unlock + session state subscription.
- */
 contextBridge.exposeInMainWorld('fakturDesktop', {
   isDesktop: true,
   version: '2.0.0',

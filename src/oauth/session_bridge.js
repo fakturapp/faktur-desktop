@@ -1,30 +1,5 @@
 'use strict'
 
-/**
- * Session bridge — trades the OAuth access_token for a regular
- * dashboard session token (the same format the web dashboard stores
- * in localStorage.faktur_token).
- *
- * This is what makes the embedded BrowserWindow boot directly into
- * the authenticated dashboard instead of showing the login form:
- *
- *   desktop OAuth access_token
- *         │
- *         ▼
- *   POST /oauth/exchange-session
- *         │
- *         ▼
- *   { token, user, vaultKey, vaultLocked }
- *         │
- *         ▼
- *   webContents.executeJavaScript(
- *     `localStorage.setItem('faktur_token', '${token}')`
- *   )
- *         │
- *         ▼
- *   loadURL('https://dash.fakturapp.cc')
- */
-
 const config = require('../config/env')
 
 class SessionBridgeError extends Error {
@@ -36,13 +11,6 @@ class SessionBridgeError extends Error {
   }
 }
 
-/**
- * Calls the backend exchange endpoint with the user's OAuth access
- * token and returns the dashboard session payload.
- *
- * @param {string} oauthAccessToken Raw OAuth access token
- * @returns {Promise<{token: string, user: object, vaultKey: string|null, vaultLocked: boolean}>}
- */
 async function exchangeForDashboardSession(oauthAccessToken) {
   const url = `${config.api.baseUrl}${config.api.prefix}/oauth/exchange-session`
   const res = await fetch(url, {

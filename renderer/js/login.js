@@ -1,19 +1,11 @@
 'use strict'
 
-/**
- * Login window renderer — drives the 'Se connecter avec Faktur' button
- * and, if the main process passed us a disconnectReason through the
- * file URL query string, surfaces a banner explaining what happened.
- */
-
 const button = document.getElementById('connect')
 const label = document.getElementById('label')
 const errorBox = document.getElementById('error')
 const banner = document.getElementById('banner')
 const bannerTitle = document.getElementById('banner-title')
 const bannerMessage = document.getElementById('banner-message')
-
-/* ─────────────── Disconnect reason banner ─────────────── */
 
 const DISCONNECT_MESSAGES = {
   token_invalid: {
@@ -50,7 +42,12 @@ const DISCONNECT_MESSAGES = {
     message: 'Le jeton de rafraîchissement a échoué. Reconnectez-vous pour continuer.',
     variant: 'red',
   },
-  user_logout: null, // normal logout — no banner
+  user_logout: null,
+  session_expired: {
+    title: 'Session expirée',
+    message: 'Votre session a expiré. Reconnectez-vous pour continuer.',
+    variant: 'red',
+  },
   revoked: {
     title: 'Accès révoqué',
     message:
@@ -81,8 +78,6 @@ function showBanner(reason) {
 
 showBanner(getReasonFromQuery())
 
-/* ─────────────── Error helpers ─────────────── */
-
 function showError(msg) {
   errorBox.textContent = msg
   errorBox.classList.add('visible')
@@ -100,11 +95,9 @@ function setLoading(isLoading) {
     : 'Se connecter avec Faktur'
 }
 
-/* ─────────────── Auth flow trigger ─────────────── */
-
 button.addEventListener('click', async () => {
   clearError()
-  banner.classList.remove('visible') // hide banner on retry
+  banner.classList.remove('visible')
   setLoading(true)
   try {
     const result = await window.faktur.startAuth()

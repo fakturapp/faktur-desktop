@@ -2,11 +2,6 @@
 
 const { contextBridge, ipcRenderer } = require('electron')
 
-/**
- * Exposes a tiny, deliberately minimal API to the login window
- * renderer. Only what the 'Se connecter' button actually needs —
- * no arbitrary IPC access, no Node built-ins.
- */
 contextBridge.exposeInMainWorld('faktur', {
   getSessionState: () => ipcRenderer.invoke('session:get-state'),
   startAuth: () => ipcRenderer.invoke('auth:start'),
