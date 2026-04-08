@@ -16,9 +16,11 @@ function registerIpcHandlers({ onSessionChange, onUpdateBegin }) {
     return { state: tokenManager.state }
   })
 
-  ipcMain.handle(ipc.AUTH_START, async () => {
+  ipcMain.handle(ipc.AUTH_START, async (_event, opts) => {
     try {
-      await tokenManager.startAuthorizationFlow()
+      const intent =
+        opts && typeof opts === 'object' && opts.intent === 'register' ? 'register' : 'login'
+      await tokenManager.startAuthorizationFlow({ intent })
       return { ok: true }
     } catch (err) {
       return { ok: false, error: err?.message || 'authentication failed' }

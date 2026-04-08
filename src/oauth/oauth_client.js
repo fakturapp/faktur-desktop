@@ -28,6 +28,18 @@ function buildAuthorizeUrl({ redirectUri, state, codeChallenge, codeChallengeMet
   return url.toString()
 }
 
+// ---------- Register URL helper ----------
+// Wraps the authorize URL into a /register?redirect=… link so the user
+// lands on the account creation wizard first. After a successful
+// registration, the frontend honors the redirect param and bounces the
+// user back to the authorize consent screen inline.
+function buildRegisterUrl({ authorizeUrl }) {
+  const dashboardBase = config.urls.dashboard.replace(/\/+$/, '')
+  const authUrl = new URL(authorizeUrl)
+  const redirectPath = authUrl.pathname + authUrl.search
+  return `${dashboardBase}/register?redirect=${encodeURIComponent(redirectPath)}`
+}
+
 function generateState(bytes = 16) {
   return crypto.randomBytes(bytes).toString('base64url')
 }
@@ -101,6 +113,7 @@ async function revokeToken({ token, hint }) {
 module.exports = {
   OauthClientError,
   buildAuthorizeUrl,
+  buildRegisterUrl,
   generateState,
   exchangeCodeForToken,
   refreshAccessToken,

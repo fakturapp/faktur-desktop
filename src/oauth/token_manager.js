@@ -57,7 +57,7 @@ class TokenManager {
   }
 
   // ---------- Authorization flow (with granular sub-steps) ----------
-  async startAuthorizationFlow() {
+  async startAuthorizationFlow({ intent = 'login' } = {}) {
     if (this.currentFlow) return this.currentFlow.promise
 
     this._emit(sessionStates.AUTHENTICATING, { step: 'opening_browser' })
@@ -74,8 +74,12 @@ class TokenManager {
       codeChallenge,
       codeChallengeMethod,
     })
+    const externalUrl =
+      intent === 'register'
+        ? oauthClient.buildRegisterUrl({ authorizeUrl })
+        : authorizeUrl
 
-    shell.openExternal(authorizeUrl).catch(() => {})
+    shell.openExternal(externalUrl).catch(() => {})
 
     setTimeout(() => {
       if (this.state === sessionStates.AUTHENTICATING) {
