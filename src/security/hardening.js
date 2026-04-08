@@ -2,6 +2,16 @@
 
 const { app, Menu } = require('electron')
 
+// ---------- Dev mode detection ----------
+// True when the app is either unpackaged OR explicitly flagged as
+// development via FAKTUR_ENV=development. All hardening measures that
+// hurt the developer loop (keyboard locks, menu wipe, devtools auto-
+// close, debugger watchdog) are skipped in dev mode.
+function isDevMode() {
+  if (!app.isPackaged) return true
+  return process.env.FAKTUR_ENV === 'development'
+}
+
 // ---------- Dangerous launch-flag filter ----------
 // Some Chromium/Electron flags silently disable critical security
 // layers (sandbox, web security, same-origin). We refuse to boot if
@@ -32,6 +42,10 @@ function isDangerousArg(raw) {
 }
 
 function enforceLaunchFlagPolicy() {
+  // Skip the whole policy in dev mode so developers can run with
+  // --inspect, --remote-debugging-port, etc.
+  if (isDevMode()) return
+
   const offenders = process.argv.slice(1).filter(isDangerousArg)
   if (offenders.length > 0) {
     console.error(
@@ -78,7 +92,7 @@ function assertSecureWebPreferences(windowName, prefs) {
       violations.push(`${key}=${prefs[key]} (expected ${expected})`)
     }
   }
-  if (app.isPackaged && prefs.devTools === true) {
+  if (!isDevMode() && prefs.devTools === true) {
     violations.push(`devTools=true (expected false in production)`)
   }
   if (violations.length > 0) {
@@ -119,9 +133,10 @@ function installGlobalContentsGuard(allowedOrigins) {
 // ---------- DevTools lockdown for a specific window ----------
 // Blocks keyboard shortcuts that toggle DevTools, blocks the native
 // "Inspect element" context menu, and closes DevTools if anything else
-// tries to open it at runtime.
+// tries to open it at runtime. All no-ops in dev mode.
 function installDevToolsLockdown(win) {
   if (!win || win.isDestroyed?.()) return
+  if (isDevMode()) return
 
   const contents = win.webContents
 
@@ -167,18 +182,16 @@ function installDevToolsLockdown(win) {
   })
 
   contents.on('context-menu', (evt) => {
-    if (app.isPackaged) evt.preventDefault()
+    evt.preventDefault()
   })
 
-  if (app.isPackaged) {
-    contents.on('devtools-opened', () => {
-      try {
-        contents.closeDevTools()
-      } catch {
-        /* ignore */
-      }
-    })
-  }
+  contents.on('devtools-opened', () => {
+    try {
+      contents.closeDevTools()
+    } catch {
+      /* ignore */
+    }
+  })
 }
 
 // ---------- HTTPS-only network policy ----------
@@ -224,16 +237,20 @@ function installCertificateValidator(sessionInstance) {
 // ---------- Application menu wipeout ----------
 // Removes the entire native menu bar so there is no "View → Toggle
 // DevTools" entry. Must be called before creating any window.
+// No-op in dev mode so developers still have access to reload,
+// inspector, zoom, etc.
 function removeApplicationMenu() {
+  if (isDevMode()) return
   Menu.setApplicationMenu(null)
 }
 
 // ---------- Runtime debugger detection ----------
 // Polls process.debugPort. Non-zero = Node inspector attached. Quits
 // immediately. Not foolproof against native debuggers (x64dbg, Frida)
-// but catches the most common remote-debugging scenarios.
+// but catches the most common remote-debugging scenarios. No-op in dev
+// mode.
 function startDebuggerWatchdog(intervalMs = 4000) {
-  if (!app.isPackaged) return
+  if (isDevMode()) return
   const interval = setInterval(() => {
     try {
       if (process.debugPort && process.debugPort > 0) {
@@ -250,6 +267,7 @@ function startDebuggerWatchdog(intervalMs = 4000) {
 
 module.exports = {
   DANGEROUS_FLAGS,
+  isDevMode,
   enforceLaunchFlagPolicy,
   assertSecureWebPreferences,
   installGlobalContentsGuard,

@@ -7,6 +7,7 @@ const {
   installDevToolsLockdown,
   installHttpsOnlyGuard,
   installCertificateValidator,
+  isDevMode,
 } = require('../security/hardening')
 
 const LOGIN_PARTITION = 'persist:faktur-desktop-login'
@@ -25,14 +26,14 @@ function createLoginWindow({ disconnectReason } = {}) {
     allowRunningInsecureContent: false,
     experimentalFeatures: false,
     webviewTag: false,
-    devTools: !app.isPackaged,
+    devTools: isDevMode(),
     session: loginSession,
   }
   assertSecureWebPreferences('login', webPreferences)
 
   const win = new BrowserWindow({
-    width: 480,
-    height: 640,
+    width: 860,
+    height: 560,
     resizable: false,
     minimizable: true,
     maximizable: false,
@@ -46,6 +47,7 @@ function createLoginWindow({ disconnectReason } = {}) {
   })
 
   installDevToolsLockdown(win)
+  if (isDevMode()) win.webContents.openDevTools({ mode: 'detach' })
 
   const htmlPath = path.join(__dirname, '..', '..', 'renderer', 'login.html')
   const search = disconnectReason

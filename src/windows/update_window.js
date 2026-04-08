@@ -7,6 +7,7 @@ const {
   installDevToolsLockdown,
   installHttpsOnlyGuard,
   installCertificateValidator,
+  isDevMode,
 } = require('../security/hardening')
 
 const UPDATE_PARTITION = 'persist:faktur-desktop-update'
@@ -25,7 +26,7 @@ function createUpdateWindow() {
     allowRunningInsecureContent: false,
     experimentalFeatures: false,
     webviewTag: false,
-    devTools: !app.isPackaged,
+    devTools: isDevMode(),
     session: updateSession,
   }
   assertSecureWebPreferences('update', webPreferences)

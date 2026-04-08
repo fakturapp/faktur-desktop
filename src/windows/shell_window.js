@@ -11,6 +11,7 @@ const {
   installDevToolsLockdown,
   installHttpsOnlyGuard,
   installCertificateValidator,
+  isDevMode,
 } = require('../security/hardening')
 
 // ---------- Constants ----------
@@ -32,7 +33,7 @@ async function createShellWindow({ onFatalError } = {}) {
     allowRunningInsecureContent: false,
     experimentalFeatures: false,
     webviewTag: false,
-    devTools: !app.isPackaged,
+    devTools: isDevMode(),
     session: shellSession,
   }
   assertSecureWebPreferences('shell', webPreferences)
@@ -55,6 +56,7 @@ async function createShellWindow({ onFatalError } = {}) {
 
   // ---------- Per-window DevTools lockdown ----------
   installDevToolsLockdown(win)
+  if (isDevMode()) win.webContents.openDevTools({ mode: 'detach' })
 
   // ---------- Loading screen ----------
   const loadingPath = path.join(__dirname, '..', '..', 'renderer', 'loading.html')
