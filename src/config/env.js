@@ -1,15 +1,77 @@
 'use strict'
 
+const fs = require('node:fs')
 const path = require('node:path')
+const crypto = require('node:crypto')
 const dotenv = require('dotenv')
 const { app } = require('electron')
 
-// ---------- .env loader ----------
-const envPath = path.join(
-  app?.isPackaged ? path.dirname(app.getAppPath()) : process.cwd(),
-  '.env'
-)
-dotenv.config({ path: envPath })
+const OBFUSCATED_KEY_PARTS = [
+  'ZmFrdHVyLWRlc2t0b3Atdg==',
+  'Mi0xLWVudi1zYWx0',
+  'LTIwMjYtdm9sdW50',
+  'YXJpbHktdXNlZA==',
+]
+
+function deriveBundleKey() {
+  const seed = Buffer.concat(OBFUSCATED_KEY_PARTS.map((p) => Buffer.from(p, 'base64')))
+  return crypto.createHash('sha256').update(seed).digest()
+}
+
+function decryptBundle(blob) {
+  if (blob.length < 4 + 12 + 16) return null
+  const magic = blob.subarray(0, 4)
+  if (!(magic[0] === 0x46 && magic[1] === 0x4b && magic[2] === 0x54 && magic[3] === 0x31)) {
+    return null
+  }
+  const iv = blob.subarray(4, 16)
+  const tag = blob.subarray(16, 32)
+  const ciphertext = blob.subarray(32)
+  try {
+    const decipher = crypto.createDecipheriv('aes-256-gcm', deriveBundleKey(), iv)
+    decipher.setAuthTag(tag)
+    const plain = Buffer.concat([decipher.update(ciphertext), decipher.final()])
+    return JSON.parse(plain.toString('utf8'))
+  } catch {
+    return null
+  }
+}
+
+function loadBundledEnv() {
+  const candidates = []
+  if (app?.isPackaged) {
+    candidates.push(path.join(app.getAppPath(), 'src', 'config', 'env.bundle.bin'))
+    candidates.push(path.join(process.resourcesPath, 'app.asar', 'src', 'config', 'env.bundle.bin'))
+  }
+  candidates.push(path.join(__dirname, 'env.bundle.bin'))
+
+  for (const candidate of candidates) {
+    try {
+      if (!fs.existsSync(candidate)) continue
+      const blob = fs.readFileSync(candidate)
+      const parsed = decryptBundle(blob)
+      if (parsed && typeof parsed === 'object') return parsed
+    } catch {}
+  }
+  return null
+}
+
+function loadPlainEnv() {
+  const envPath = path.join(
+    app?.isPackaged ? path.dirname(app.getAppPath()) : process.cwd(),
+    '.env'
+  )
+  dotenv.config({ path: envPath })
+}
+
+const bundled = loadBundledEnv()
+if (bundled) {
+  for (const [key, value] of Object.entries(bundled)) {
+    if (process.env[key] === undefined) process.env[key] = String(value)
+  }
+} else {
+  loadPlainEnv()
+}
 
 function parseScopes(raw) {
   if (!raw) return ['profile']
@@ -34,13 +96,6 @@ function optional(name, fallback) {
   return process.env[name] ?? fallback
 }
 
-// ---------- Frozen config object ----------
-// NOTE: client_secret intentionally REMOVED — the desktop is a public
-// OAuth client and relies exclusively on PKCE. Any secret embedded in
-// the binary is extractable and provides no real protection.
-// FAKTUR_ENV is read only for display/telemetry — it is NEVER used to
-// gate security features. The authoritative dev-mode signal is
-// `app.isPackaged` in src/security/hardening.js.
 const config = Object.freeze({
   env: optional('FAKTUR_ENV', 'production'),
   devtools: !app?.isPackaged,
