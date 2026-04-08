@@ -13,7 +13,7 @@ Merci de vouloir contribuer à Faktur Desktop. Ce projet est sous [Personal Use 
 ## Avant de contribuer
 
 1. Lisez la [LICENSE](./LICENSE). Les forks destinés à créer un client concurrent ne seront pas acceptés.
-2. Lisez la [politique de sécurité](./SECURITY.md). Toute vulnérabilité doit être signalée en privé à `contact@fakturapp.cc`, pas via une pull request publique.
+2. Lisez la [politique de sécurité](./SECURITY.md). Toute vulnérabilité doit être signalée en privé à `support@fakturapp.cc`, pas via une pull request publique.
 3. Vérifiez que votre idée n'est pas déjà discutée dans les [issues](https://github.com/fakturapp/faktur-desktop/issues).
 
 ## Signaler un bug

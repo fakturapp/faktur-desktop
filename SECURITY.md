@@ -14,7 +14,7 @@ La sécurité des utilisateurs de Faktur Desktop est une priorité absolue. Si v
 
 **Ne créez pas d'issue publique.** Envoyez un email à :
 
-> **contact@fakturapp.cc**
+> **support@fakturapp.cc**
 
 Incluez dans votre rapport :
 

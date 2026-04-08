@@ -42,7 +42,7 @@ Ce code de conduite s'applique à tous les espaces du projet, ainsi que dans les
 
 ## Application
 
-Les cas de comportement abusif, harcelant ou autrement inacceptable peuvent être signalés en contactant l'équipe du projet à `contact@fakturapp.cc`. Toutes les plaintes seront examinées et étudiées et aboutiront à une réponse jugée nécessaire et appropriée aux circonstances. L'équipe du projet est tenue de respecter la confidentialité concernant le rapporteur d'un incident.
+Les cas de comportement abusif, harcelant ou autrement inacceptable peuvent être signalés en contactant l'équipe du projet à `support@fakturapp.cc`. Toutes les plaintes seront examinées et étudiées et aboutiront à une réponse jugée nécessaire et appropriée aux circonstances. L'équipe du projet est tenue de respecter la confidentialité concernant le rapporteur d'un incident.
 
 Les mainteneurs du projet qui ne suivent pas ou n'appliquent pas ce code de conduite de bonne foi peuvent faire face à des répercussions temporaires ou permanentes déterminées par les autres membres de la direction du projet.
 
