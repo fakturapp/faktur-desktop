@@ -32,8 +32,8 @@ function createLoginWindow({ disconnectReason } = {}) {
   assertSecureWebPreferences('login', webPreferences)
 
   const win = new BrowserWindow({
-    width: 860,
-    height: 560,
+    width: 880,
+    height: 580,
     resizable: false,
     minimizable: true,
     maximizable: false,
