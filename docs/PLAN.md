@@ -155,7 +155,50 @@ master        fix(auth): delegate desktop logout to Electron main process to bre
 
 ---
 
-## 5. Checklist de release 2.1.0
+## 5. Roadmap prioritisée (post-Perplexity)
+
+Ordre recommandé par le rapport d'audit Perplexity final, mappé à notre
+backlog :
+
+### P0 — Finalisation v2.1.0 (done)
+
+| # | Item | Statut |
+|---|------|--------|
+| 1 | Logout/wipe complet testé | ✅ |
+| 2 | `safeStorage` faible refusé | ✅ |
+| 3 | Audit de toutes les fenêtres et IPC | ✅ `hardening.assertSecureWebPreferences` |
+| 4 | Tests de base du desktop proof | ✅ `tests/desktop_proof.test.js` |
+| 5 | Launch flags dangereux bloqués | ✅ `enforceLaunchFlagPolicy` |
+| 6 | ASAR integrity + fuses | ✅ `package.json` |
+| 7 | macOS entitlements | ✅ `build/entitlements.mac.plist` |
+
+### P1 — Release production (pré-publication 2.1.0)
+
+| # | Item | Statut |
+|---|------|--------|
+| 1 | Signer binaires Windows EV | ⬜ CI secret + certificat à provisionner |
+| 2 | Signer binaires macOS Developer ID | ⬜ CI secret + certificat à provisionner |
+| 3 | Notarization Apple (`xcrun notarytool submit`) | ⬜ |
+| 4 | Vérifier fuses dans le binaire final (`electron-fuses --app dist/...`) | ⬜ |
+| 5 | Tester l'ASAR integrity après modification manuelle (`.asar` corrompu → refus de boot) | ⬜ |
+| 6 | Page de téléchargement + changelog publics | ⬜ |
+| 7 | Télémétrie échecs de proof verification (dashboard admin) | ⬜ |
+
+### P2 — v2.2 (durcissement avancé)
+
+| # | Item | Statut |
+|---|------|--------|
+| 1 | Device-bound Ed25519 à la place du HMAC statique | ⬜ majeur — refonte OAuth registration + table backend |
+| 2 | Obfuscation JS (`bytenode` pour `src/security/` + `src/oauth/`) | ⬜ |
+| 3 | Anti-debug hooks (détection Frida / ptrace) | ⬜ |
+| 4 | Tests E2E Playwright-Electron | ⬜ |
+| 5 | Remettre la shell en sandbox (ou remplacer CDP par handshake preload) | ⬜ |
+| 6 | Rotation automatique de la desktop proof key via electron-updater | ⬜ |
+| 7 | Audit externe tiers | ⬜ |
+
+---
+
+## 6. Checklist de release 2.1.0
 
 - [x] Tous les commits de la section 4 mergés sur `main`.
 - [ ] `FAKTUR_DESKTOP_PROOF_KEY` défini en production dans les secrets
