@@ -219,10 +219,17 @@ function removeApplicationMenu() {
 // ---------- Runtime debugger detection ----------
 function startDebuggerWatchdog(intervalMs = 4000) {
   if (isDevMode()) return
+  let inspector
+  try {
+    inspector = require('node:inspector')
+  } catch {
+    return
+  }
   const interval = setInterval(() => {
     try {
-      if (process.debugPort && process.debugPort > 0) {
-        console.error('[hardening] debugger attach detected — quitting')
+      const url = typeof inspector.url === 'function' ? inspector.url() : null
+      if (url) {
+        console.error('[hardening] inspector attached at', url, '— quitting')
         clearInterval(interval)
         app.exit(1)
       }
