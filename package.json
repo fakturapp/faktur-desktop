@@ -15,6 +15,7 @@
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux",
+    "test": "node tests/desktop_proof.test.js",
     "lint": "echo \"lint placeholder\""
   },
   "build": {
