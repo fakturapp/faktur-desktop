@@ -69,16 +69,64 @@ const PAGE_SHELL = (title, body) => `<!doctype html>
       max-width: 440px;
       animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
     }
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      filter: drop-shadow(0 8px 20px rgba(99, 102, 241, 0.35));
+    }
+    .brand-logo svg { width: 100%; height: 100%; display: block; }
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      line-height: 1.1;
+    }
+    .brand-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--fg);
+      letter-spacing: -0.02em;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--fg-muted);
+      letter-spacing: 0.02em;
+      margin-top: 2px;
+    }
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 24px;
-      padding: 44px 36px;
+      padding: 36px 32px;
       text-align: center;
       box-shadow:
         0 20px 60px rgba(0, 0, 0, 0.5),
         0 0 0 1px rgba(255, 255, 255, 0.02);
     }
+    .faktur-spinner {
+      width: 32px;
+      height: 32px;
+      position: relative;
+    }
+    .faktur-spinner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 3px solid rgba(99, 102, 241, 0.2);
+      border-top-color: var(--primary);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .stage { display: none; }
+    .stage.visible { display: block; animation: fadeInUp 0.25s ease-out both; }
     .icon-wrap {
       position: relative;
       width: 72px;
@@ -183,31 +231,62 @@ const PAGE_SHELL = (title, body) => `<!doctype html>
 const CHECK_SVG = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>`
 const X_SVG = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`
 
+const FAKTUR_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><g transform="translate(60, 20)"><path d="M 40 0 H 190 L 280 90 V 320 A 40 40 0 0 1 240 360 H 40 A 40 40 0 0 1 0 320 V 40 A 40 40 0 0 1 40 0 Z" fill="#6366f1"/><path d="M 190 0 V 60 A 30 30 0 0 0 220 90 H 280 Z" fill="#4f46e5"/><ellipse cx="90" cy="150" rx="30" ry="32" fill="white"/><ellipse cx="98" cy="146" rx="15" ry="16" fill="#1e1b4b"/><ellipse cx="104" cy="138" rx="5" ry="5" fill="white"/><ellipse cx="190" cy="150" rx="30" ry="32" fill="white"/><ellipse cx="198" cy="146" rx="15" ry="16" fill="#1e1b4b"/><ellipse cx="204" cy="138" rx="5" ry="5" fill="white"/><path d="M 105 220 C 120 245 160 245 175 220" stroke="white" stroke-width="15" stroke-linecap="round" fill="none"/><ellipse cx="70" cy="200" rx="20" ry="12" fill="#a5b4fc" opacity="0.5"/><ellipse cx="210" cy="200" rx="20" ry="12" fill="#a5b4fc" opacity="0.5"/><line x1="70" y1="280" x2="210" y2="280" stroke="#a5b4fc" stroke-width="12" stroke-linecap="round" opacity="0.6"/><line x1="70" y1="310" x2="160" y2="310" stroke="#a5b4fc" stroke-width="12" stroke-linecap="round" opacity="0.6"/><path d="M -20 200 C -40 200 -50 220 -40 235" stroke="#6366f1" stroke-width="20" stroke-linecap="round" fill="none"/><path d="M 300 200 C 320 200 330 220 320 235" stroke="#6366f1" stroke-width="20" stroke-linecap="round" fill="none"/></g></svg>`
+
+const BRAND_HEADER = `<div class="brand">
+  <div class="brand-logo">${FAKTUR_LOGO_SVG}</div>
+  <div class="brand-text">
+    <span class="brand-name">Faktur Desktop</span>
+    <span class="brand-sub">Authentification sécurisée</span>
+  </div>
+</div>`
+
 const SUCCESS_HTML = PAGE_SHELL(
-  'Connexion réussie',
-  `<div class="card">
-    <div class="icon-wrap">
-      <div class="halo ok"></div>
-      <div class="icon ok">${CHECK_SVG}</div>
+  'Connexion en cours',
+  `${BRAND_HEADER}
+  <div class="card">
+    <div id="stage-progress" class="stage visible">
+      <div class="icon-wrap">
+        <div class="icon ok" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">
+          <div class="faktur-spinner"></div>
+        </div>
+      </div>
+      <h1>Connexion en cours</h1>
+      <p>Validation de votre session avec Faktur Desktop…</p>
     </div>
-    <h1>Connexion réussie</h1>
-    <p>Vous pouvez fermer cette fenêtre et revenir à l'application Faktur Desktop.</p>
+    <div id="stage-success" class="stage">
+      <div class="icon-wrap">
+        <div class="halo ok"></div>
+        <div class="icon ok">${CHECK_SVG}</div>
+      </div>
+      <h1>Connexion réussie</h1>
+      <p>Vous pouvez fermer cette fenêtre et revenir à l'application Faktur Desktop.</p>
+      <div class="countdown" id="countdown"></div>
+    </div>
   </div>
   <script>
-    let n = 3;
-    const el = document.getElementById('countdown');
-    const int = setInterval(() => {
-      n--;
-      if (n <= 0) { clearInterval(int); window.close(); return; }
-      el.textContent = 'Fermeture automatique dans ' + n + ' secondes…';
-    }, 1000);
+    setTimeout(function () {
+      var progress = document.getElementById('stage-progress');
+      var success = document.getElementById('stage-success');
+      if (progress) progress.classList.remove('visible');
+      if (success) success.classList.add('visible');
+      var n = 3;
+      var el = document.getElementById('countdown');
+      if (el) el.textContent = 'Fermeture automatique dans 3 secondes…';
+      var int = setInterval(function () {
+        n--;
+        if (n <= 0) { clearInterval(int); window.close(); return; }
+        if (el) el.textContent = 'Fermeture automatique dans ' + n + ' secondes…';
+      }, 1000);
+    }, 500);
   </script>`
 )
 
 const ERROR_HTML = (message) =>
   PAGE_SHELL(
     'Erreur',
-    `<div class="card">
+    `${BRAND_HEADER}
+    <div class="card">
       <div class="icon-wrap">
         <div class="halo error"></div>
         <div class="icon error">${X_SVG}</div>
