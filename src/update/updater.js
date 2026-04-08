@@ -1,12 +1,5 @@
 'use strict'
 
-// ---------- Auto-updater ----------
-// Checks https://api.github.com/repos/fakturapp/faktur-desktop/releases/latest
-// Compares tag_name vs package.json version, and if a newer release is
-// available AND it ships a FakturDesktop-Installer.exe asset, notifies
-// subscribers. A later call to downloadAndInstall() fetches the asset
-// to the OS temp dir, spawns the NSIS installer silently, and quits.
-
 const fs = require('node:fs')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
@@ -16,7 +9,6 @@ const GITHUB_LATEST_URL =
   'https://api.github.com/repos/fakturapp/faktur-desktop/releases/latest'
 const INSTALLER_FILENAME = 'FakturDesktop-Installer.exe'
 
-// ---------- Version compare (loose semver) ----------
 function parseVersion(raw) {
   const clean = String(raw || '').replace(/^v/i, '')
   const parts = clean.split('-')[0].split('.').map((n) => Number.parseInt(n, 10))
@@ -41,7 +33,6 @@ function getCurrentVersion() {
   }
 }
 
-// ---------- Check ----------
 let cachedResult = null
 const listeners = new Set()
 
@@ -55,7 +46,6 @@ function emit(event) {
     try {
       cb(event)
     } catch {
-      /* ignore */
     }
   }
 }
@@ -125,7 +115,6 @@ async function downloadAndInstall({ onProgress } = {}) {
   try {
     fs.unlinkSync(installerPath)
   } catch {
-    /* ignore */
   }
 
   const res = await fetch(cachedResult.downloadUrl, {
@@ -161,10 +150,6 @@ async function downloadAndInstall({ onProgress } = {}) {
 
   emit({ type: 'downloaded', path: installerPath })
 
-  // NSIS silent install flags:
-  //   /S                — silent
-  //   --force-run       — electron-builder NSIS relauncher hook
-  //   /D=<path>         — intentionally omitted: keep current install dir
   const args = ['/S', '--force-run']
   const child = spawn(installerPath, args, {
     detached: true,

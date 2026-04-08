@@ -27,7 +27,6 @@ async function exchangeForDashboardSession(oauthAccessToken) {
   try {
     data = await res.json()
   } catch {
-    /* no body */
   }
 
   if (!res.ok) {

@@ -1,32 +1,10 @@
 'use strict'
 
-// ---------- Runtime attestation verifier ----------
-// At every boot we:
-//   1. Read resources/attestation.json (written at build-time by
-//      scripts/afterPack.js using the maintainer's private key).
-//   2. Recompute SHA-256 of resources/app.asar at runtime.
-//   3. Verify the Ed25519 signature with the hardcoded official
-//      public key (src/config/keys.js).
-//   4. Cross-check that the computed asar hash equals the hash that
-//      was signed. Any mismatch = NOT certified.
-//
-// This guarantees two things at once:
-//   a. The running binary was built by the legitimate maintainer
-//      (signature check).
-//   b. The running binary's code has not been tampered with since
-//      being signed (hash check).
-//
-// A forked Faktur Desktop cannot produce a valid attestation because
-// the attacker does not hold the Ed25519 private key, and cannot
-// reuse the official attestation because their asar hash differs.
-
 const path = require('node:path')
 const crypto = require('node:crypto')
 const { app } = require('electron')
 const { OFFICIAL_PUBLIC_KEY_SPKI_BASE64 } = require('../config/keys')
 
-// `original-fs` bypasses Electron's asar virtualization so we can
-// read raw bytes from app.asar on disk.
 let fs
 try {
   fs = require('original-fs')
@@ -36,7 +14,6 @@ try {
 
 const CACHE = { value: null }
 
-// ---------- SHA-256 of the raw app.asar file ----------
 function computeAsarHash() {
   if (!app.isPackaged) return null
   try {
@@ -49,7 +26,6 @@ function computeAsarHash() {
   }
 }
 
-// ---------- Load signed attestation.json ----------
 function loadAttestationFile() {
   if (!app.isPackaged) return null
   try {
@@ -62,7 +38,6 @@ function loadAttestationFile() {
   }
 }
 
-// ---------- Ed25519 signature verification ----------
 function verifySignature(attestation) {
   try {
     const { payload, signature } = attestation
@@ -81,7 +56,6 @@ function verifySignature(attestation) {
   }
 }
 
-// ---------- Public API ----------
 function getCertificationStatus() {
   if (CACHE.value) return CACHE.value
 

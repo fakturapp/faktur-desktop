@@ -1,11 +1,5 @@
 'use strict'
 
-// ---------- Self-contained desktop proof round-trip test ----------
-// Runs with `node tests/desktop_proof.test.js` — no test framework, no
-// Electron runtime. It re-implements the verifier locally and checks
-// that a signature produced by the production HMAC routine passes the
-// verifier, and that tampering breaks it.
-
 const crypto = require('node:crypto')
 const assert = require('node:assert/strict')
 

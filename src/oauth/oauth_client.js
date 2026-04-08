@@ -12,7 +12,6 @@ class OauthClientError extends Error {
   }
 }
 
-// ---------- URL helpers ----------
 function buildAuthorizeUrl({ redirectUri, state, codeChallenge, codeChallengeMethod }) {
   const base = config.urls.authorize
   const url = new URL(base)
@@ -28,11 +27,6 @@ function buildAuthorizeUrl({ redirectUri, state, codeChallenge, codeChallengeMet
   return url.toString()
 }
 
-// ---------- Register URL helper ----------
-// Wraps the authorize URL into a /register?redirect=… link so the user
-// lands on the account creation wizard first. After a successful
-// registration, the frontend honors the redirect param and bounces the
-// user back to the authorize consent screen inline.
 function buildRegisterUrl({ authorizeUrl }) {
   const dashboardBase = config.urls.dashboard.replace(/\/+$/, '')
   const authUrl = new URL(authorizeUrl)
@@ -45,9 +39,6 @@ function generateState(bytes = 16) {
 }
 
 // ---------- HTTP core ----------
-// Desktop is a PUBLIC OAuth client: we rely on PKCE (RFC 7636) rather
-// than an embedded client_secret. The secret would be trivially
-// extractable from the packaged binary and provides no real protection.
 async function postForm(path, body) {
   const url = `${config.api.baseUrl}${config.api.prefix}${path}`
   const res = await fetch(url, {
@@ -64,7 +55,6 @@ async function postForm(path, body) {
   try {
     data = await res.json()
   } catch {
-    /* no body */
   }
   if (!res.ok) {
     throw new OauthClientError(
@@ -106,7 +96,6 @@ async function revokeToken({ token, hint }) {
       token_type_hint: hint || 'access_token',
     })
   } catch {
-    /* ignore */
   }
 }
 

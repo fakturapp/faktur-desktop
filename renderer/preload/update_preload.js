@@ -2,7 +2,6 @@
 
 const { contextBridge, ipcRenderer } = require('electron')
 
-// ---------- Update window bridge ----------
 contextBridge.exposeInMainWorld('fakturUpdate', {
   getUpdateInfo: () => ipcRenderer.invoke('update:get-info'),
   start: () => ipcRenderer.invoke('update:start-download'),

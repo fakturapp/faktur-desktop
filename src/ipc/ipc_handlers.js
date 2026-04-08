@@ -7,11 +7,9 @@ const updater = require('../update/updater')
 const attestation = require('../security/attestation')
 const config = require('../config/env')
 
-// ---------- IPC registration ----------
 function registerIpcHandlers({ onSessionChange, onUpdateBegin }) {
   const { ipc } = constants
 
-  // ---------- Session ----------
   ipcMain.handle(ipc.SESSION_GET_STATE, () => {
     return { state: tokenManager.state }
   })

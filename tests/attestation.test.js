@@ -1,10 +1,5 @@
 'use strict'
 
-// ---------- Attestation round-trip test ----------
-// Self-contained: generates a throwaway Ed25519 keypair, signs a
-// payload, verifies successfully, then tampers and verifies the
-// failures.
-
 const crypto = require('node:crypto')
 const assert = require('node:assert/strict')
 

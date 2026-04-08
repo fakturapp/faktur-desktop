@@ -2,7 +2,6 @@
 
 const { app, BrowserWindow, session } = require('electron')
 
-// ---------- Env (must load before app.whenReady for early failures) ----------
 let config
 try {
   config = require('../config/env')
@@ -27,15 +26,10 @@ const {
   startDebuggerWatchdog,
 } = require('../security/hardening')
 
-// ---------- Launch-flag policy (runs before any other Electron API) ----------
 enforceLaunchFlagPolicy()
 
-// ---------- Global sandbox ----------
-// Forces every renderer process the app spawns to run inside a
-// restricted Chromium sandbox. Must be called before app.whenReady.
 app.enableSandbox()
 
-// ---------- Single-instance lock ----------
 const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
   app.quit()
@@ -49,7 +43,6 @@ if (!gotTheLock) {
   })
 }
 
-// ---------- Window lifecycle ----------
 let currentWindow = null
 let lastLogoutReason = null
 let swapping = false
@@ -89,7 +82,6 @@ async function openForState(state, options = {}) {
   }
 }
 
-// ---------- Update flow ----------
 async function beginUpdate() {
   if (currentWindow && !currentWindow.isDestroyed()) {
     currentWindow.removeAllListeners('closed')
@@ -120,14 +112,9 @@ async function scheduleUpdateCheck() {
   }, 1000 * 60 * 60)
 }
 
-// ---------- Bootstrap ----------
 async function bootstrap() {
-  // ---------- Kill the application menu ----------
-  // Removes every "View → Toggle DevTools" entry from the native menu
-  // bar. Must run before windows are created.
   removeApplicationMenu()
 
-  // ---------- Global web-contents guard ----------
   installGlobalContentsGuard([
     config.urls.dashboard,
     config.api.baseUrl,
@@ -136,7 +123,6 @@ async function bootstrap() {
     'file://',
   ])
 
-  // ---------- HTTPS-only + cert validation on every session ----------
   for (const sessionInstance of [
     session.defaultSession,
     session.fromPartition('persist:faktur-desktop-shell'),
@@ -147,10 +133,8 @@ async function bootstrap() {
     installCertificateValidator(sessionInstance)
   }
 
-  // ---------- Runtime debugger detection (prod only) ----------
   startDebuggerWatchdog()
 
-  // ---------- IPC wiring ----------
   registerIpcHandlers({
     onSessionChange: async (payload) => {
       for (const win of BrowserWindow.getAllWindows()) {

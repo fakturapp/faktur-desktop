@@ -1,7 +1,5 @@
 'use strict'
 
-// ---------- Update window renderer ----------
-
 const bar = document.getElementById('bar')
 const statusEl = document.getElementById('status')
 const downloadedEl = document.getElementById('downloaded')
@@ -26,7 +24,6 @@ function showError(msg) {
     const info = await window.fakturUpdate.getUpdateInfo()
     if (info?.version) versionEl.textContent = `v${info.version}`
   } catch {
-    /* ignore */
   }
 
   window.fakturUpdate.onProgress((payload) => {

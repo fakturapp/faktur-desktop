@@ -2,8 +2,6 @@
 
 const { contextBridge, ipcRenderer } = require('electron')
 
-// ---------- Login window bridge ----------
-// Exposes only what the login page actually needs.
 contextBridge.exposeInMainWorld('faktur', {
   getSessionState: () => ipcRenderer.invoke('session:get-state'),
   startAuth: (opts) => {

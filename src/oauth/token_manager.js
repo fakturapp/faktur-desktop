@@ -11,12 +11,9 @@ const constants = require('../config/constants')
 
 const { storageKeys, session: sessionStates } = constants
 
-// ---------- Config ----------
 const REFRESH_MARGIN_MS = 60 * 1000
 const SHELL_PARTITION = 'persist:faktur-desktop-shell'
 const LOGIN_PARTITION = 'persist:faktur-desktop-login'
-// Mirror the loopback callback page transition timings so the login
-// window button visually syncs with what the user sees in the browser.
 const LOOPBACK_PROGRESS_MS = 500
 const SUCCESS_DWELL_MS = 900
 
@@ -27,7 +24,6 @@ class TokenManager {
     this.currentFlow = null
   }
 
-  // ---------- Listener API ----------
   onStateChange(cb) {
     this.listeners.add(cb)
     return () => this.listeners.delete(cb)
@@ -39,12 +35,10 @@ class TokenManager {
       try {
         cb({ state, ...extra })
       } catch {
-        /* ignore */
       }
     }
   }
 
-  // ---------- Bootstrap ----------
   bootstrap() {
     const access = secureStore.get(storageKeys.ACCESS_TOKEN)
     const refresh = secureStore.get(storageKeys.REFRESH_TOKEN)
@@ -56,7 +50,6 @@ class TokenManager {
     return sessionStates.UNAUTHENTICATED
   }
 
-  // ---------- Authorization flow (with granular sub-steps) ----------
   async startAuthorizationFlow({ intent = 'login' } = {}) {
     if (this.currentFlow) return this.currentFlow.promise
 
@@ -90,14 +83,8 @@ class TokenManager {
     const promise = (async () => {
       try {
         const { code } = await server.wait
-        // The loopback page is now showing "Connexion en cours" with a
-        // spinner. Mirror that on the login window button.
         this._emit(sessionStates.AUTHENTICATING, { step: 'exchanging' })
 
-        // Run the actual token exchange in parallel with the minimum
-        // visual delay so both UIs hold the spinner state for at least
-        // LOOPBACK_PROGRESS_MS — keeping the loopback page and the
-        // login button visually in sync.
         const exchangePromise = oauthClient.exchangeCodeForToken({
           code,
           redirectUri,
@@ -112,7 +99,6 @@ class TokenManager {
         const [tokenResponse] = await Promise.all([exchangePromise, minDelay])
         this._persistTokenResponse(tokenResponse)
 
-        // Both UIs flip to the success state at the same instant.
         this._emit(sessionStates.AUTHENTICATING, { step: 'success' })
         await new Promise((resolve) => setTimeout(resolve, SUCCESS_DWELL_MS))
         this._emit(sessionStates.AUTHENTICATED)
@@ -160,12 +146,6 @@ class TokenManager {
   }
 
   // ---------- Logout ----------
-  // wipeAll === false (default): only the encrypted secure store is
-  //   cleared. Cookies, localStorage, cache, indexedDB, and service
-  //   workers in the shell partition are LEFT IN PLACE so theme,
-  //   language, dismissed banners, etc. survive the logout.
-  // wipeAll === true: full nuclear option — every browser-side bucket
-  //   on every partition is wiped on top of the secure store.
   async logout({ remoteRevoke = true, reason = 'user_logout', wipeAll = false } = {}) {
     const access = secureStore.get(storageKeys.ACCESS_TOKEN)
     const refresh = secureStore.get(storageKeys.REFRESH_TOKEN)
@@ -214,7 +194,6 @@ class TokenManager {
       await defaultSession.clearStorageData(wipeOptions)
       await defaultSession.clearCache()
     } catch {
-      /* ignore */
     }
   }
 

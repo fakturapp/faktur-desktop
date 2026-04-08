@@ -315,7 +315,6 @@ function startCallbackServer({ expectedState, timeoutMs = 5 * 60 * 1000 }) {
     try {
       server.close()
     } catch {
-      /* ignore */
     }
   }
 

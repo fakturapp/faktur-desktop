@@ -20,7 +20,6 @@ function readRaw() {
     try {
       fs.unlinkSync(file)
     } catch {
-      /* ignore */
     }
     return {}
   }
@@ -57,7 +56,6 @@ function clear() {
   try {
     fs.unlinkSync(storePath())
   } catch {
-    /* already gone */
   }
 }
 

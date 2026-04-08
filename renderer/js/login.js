@@ -1,6 +1,5 @@
 'use strict'
 
-// ---------- Element refs ----------
 const button = document.getElementById('connect')
 const registerBtn = document.getElementById('register')
 const label = document.getElementById('label')
@@ -10,7 +9,6 @@ const banner = document.getElementById('banner')
 const bannerTitle = document.getElementById('banner-title')
 const bannerMessage = document.getElementById('banner-message')
 
-// ---------- Disconnect banner strings ----------
 const DISCONNECT_MESSAGES = {
   token_invalid: {
     title: 'Vous avez été déconnecté(e)',
@@ -82,7 +80,6 @@ function showBanner(reason) {
 
 showBanner(getReasonFromQuery())
 
-// ---------- Error helpers ----------
 function showError(msg) {
   errorBox.textContent = msg
   errorBox.classList.add('visible')
@@ -93,7 +90,6 @@ function clearError() {
   errorBox.classList.remove('visible')
 }
 
-// ---------- Button/label state machine ----------
 const SPINNER_HTML = '<span class="faktur-spinner"></span>'
 const CHECK_HTML =
   '<span class="check-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></span>'
@@ -144,7 +140,6 @@ function setStage(stage) {
   }
 }
 
-// ---------- Click handlers ----------
 function isTimeoutError(msg) {
   if (!msg) return false
   const lower = String(msg).toLowerCase()
@@ -178,7 +173,6 @@ if (registerBtn) {
   registerBtn.addEventListener('click', () => startAuth('register'))
 }
 
-// ---------- Session state sub-step listener ----------
 if (window.faktur?.onSessionChange) {
   window.faktur.onSessionChange((payload) => {
     if (!payload) return

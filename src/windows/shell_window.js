@@ -14,11 +14,9 @@ const {
   isDevMode,
 } = require('../security/hardening')
 
-// ---------- Constants ----------
 const DESKTOP_USER_AGENT_SUFFIX = 'FakturDesktop/2.0'
 const SHELL_PARTITION = 'persist:faktur-desktop-shell'
 
-// ---------- Public factory ----------
 async function createShellWindow({ onFatalError } = {}) {
   const shellSession = session.fromPartition(SHELL_PARTITION)
   installHttpsOnlyGuard(shellSession)
@@ -94,12 +92,6 @@ async function createShellWindow({ onFatalError } = {}) {
 
     if (win.isDestroyed()) return
 
-    // The dashboard session is delivered via a URL hash fragment that
-    // the frontend reads on first render through consumeDesktopSessionHash.
-    // Fragments never reach the server, never show up in logs or
-    // referrers, and are readable synchronously before React mounts.
-    // This replaces the old CDP-debugger injection path which required
-    // sandbox:false — we can now ship a fully sandboxed shell.
     const sessionPayload = {
       t: bridgedSession.token,
       v: bridgedSession.vaultKey,
@@ -160,14 +152,11 @@ function installNavigationGuard(win, onFatalError) {
         handleLoginRedirect()
       }
     } catch {
-      /* ignore */
     }
   })
 }
 
 // ---------- Desktop cryptographic proof header ----------
-// Adds X-Faktur-Desktop-Proof on every API request so the backend can
-// distinguish a real desktop client from a browser that spoofs the UA.
 function installDesktopProofHeader(win) {
   const apiHost = new URL(config.api.baseUrl).host
   const ses = win.webContents.session
@@ -193,9 +182,6 @@ function installDesktopProofHeader(win) {
 }
 
 // ---------- Permission blocker ----------
-// The dashboard is trusted content but we still block notifications,
-// media devices, geolocation, etc. by default — the user can re-enable
-// from the OS permissions panel if they need them.
 function installPermissionBlocker(sessionInstance) {
   sessionInstance.setPermissionRequestHandler((_webContents, permission, callback) => {
     const allowed = new Set(['clipboard-read', 'clipboard-sanitized-write'])

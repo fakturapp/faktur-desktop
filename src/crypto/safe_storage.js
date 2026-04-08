@@ -9,13 +9,6 @@ class SafeStorageError extends Error {
   }
 }
 
-// ---------- Strong-backend enforcement ----------
-// safeStorage can silently fall back to 'basic_text' on Linux when no
-// secret store (libsecret/kwallet) is available. In that mode the tokens
-// are stored in plaintext and offer no protection. We refuse to run in
-// that mode — the user must install a real backend or use a different
-// host. See https://electronjs.org/docs/latest/api/safe-storage
-
 const WEAK_BACKENDS = new Set(['basic_text'])
 
 function getBackend() {
@@ -44,8 +37,6 @@ function ensureAvailable() {
     )
   }
 }
-
-// ---------- Encrypt / decrypt ----------
 
 function encryptString(plaintext) {
   ensureAvailable()

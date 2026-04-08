@@ -4,7 +4,6 @@ module.exports = Object.freeze({
   APP_NAME: 'Faktur Desktop',
   APP_ID: 'cc.fakturapp.desktop',
 
-  // ---------- IPC channels ----------
   ipc: {
     SESSION_STATE_CHANGED: 'session:state-changed',
     SESSION_GET_STATE: 'session:get-state',
@@ -23,7 +22,6 @@ module.exports = Object.freeze({
     UPDATE_PROGRESS: 'update:progress',
   },
 
-  // ---------- Session state enum ----------
   session: {
     UNAUTHENTICATED: 'unauthenticated',
     AUTHENTICATING: 'authenticating',
@@ -33,7 +31,6 @@ module.exports = Object.freeze({
     ERROR: 'error',
   },
 
-  // ---------- Secure store keys ----------
   storageKeys: {
     ACCESS_TOKEN: 'access_token',
     REFRESH_TOKEN: 'refresh_token',

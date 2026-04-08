@@ -2,9 +2,6 @@
 
 const { contextBridge, ipcRenderer } = require('electron')
 
-// ---------- fakturDesktop bridge ----------
-// Minimal, strictly-filtered API exposed to the dashboard renderer.
-// Everything goes through named IPC channels; no Node globals leak.
 contextBridge.exposeInMainWorld('fakturDesktop', {
   isDesktop: true,
   version: '2.1.0',
@@ -23,7 +20,6 @@ contextBridge.exposeInMainWorld('fakturDesktop', {
     return ipcRenderer.invoke('window:open-external', url)
   },
 
-  // ---------- Update API ----------
   getPendingUpdate: () => ipcRenderer.invoke('update:get-pending'),
   checkForUpdate: () => ipcRenderer.invoke('update:check'),
   beginUpdate: () => ipcRenderer.invoke('update:begin'),
