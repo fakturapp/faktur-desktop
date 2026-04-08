@@ -15,6 +15,7 @@ const { storageKeys, session: sessionStates } = constants
 const REFRESH_MARGIN_MS = 60 * 1000
 const SHELL_PARTITION = 'persist:faktur-desktop-shell'
 const LOGIN_PARTITION = 'persist:faktur-desktop-login'
+const SUCCESS_DWELL_MS = 900
 
 class TokenManager {
   constructor() {
@@ -52,11 +53,11 @@ class TokenManager {
     return sessionStates.UNAUTHENTICATED
   }
 
-  // ---------- Authorization flow ----------
+  // ---------- Authorization flow (with granular sub-steps) ----------
   async startAuthorizationFlow() {
     if (this.currentFlow) return this.currentFlow.promise
 
-    this._emit(sessionStates.AUTHENTICATING)
+    this._emit(sessionStates.AUTHENTICATING, { step: 'opening_browser' })
 
     const { codeVerifier, codeChallenge, codeChallengeMethod } = pkce.createPkcePair()
     const state = oauthClient.generateState()
@@ -73,9 +74,18 @@ class TokenManager {
 
     shell.openExternal(authorizeUrl).catch(() => {})
 
+    setTimeout(() => {
+      if (this.state === sessionStates.AUTHENTICATING) {
+        this._emit(sessionStates.AUTHENTICATING, { step: 'waiting_callback' })
+      }
+    }, 500)
+
     const promise = (async () => {
       try {
         const { code } = await server.wait
+        this._emit(sessionStates.AUTHENTICATING, { step: 'received_callback' })
+
+        this._emit(sessionStates.AUTHENTICATING, { step: 'exchanging' })
         const tokenResponse = await oauthClient.exchangeCodeForToken({
           code,
           redirectUri,
@@ -87,6 +97,9 @@ class TokenManager {
           },
         })
         this._persistTokenResponse(tokenResponse)
+
+        this._emit(sessionStates.AUTHENTICATING, { step: 'success' })
+        await new Promise((resolve) => setTimeout(resolve, SUCCESS_DWELL_MS))
         this._emit(sessionStates.AUTHENTICATED)
         return tokenResponse
       } catch (err) {
