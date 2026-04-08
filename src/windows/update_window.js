@@ -1,14 +1,20 @@
 'use strict'
 
 const path = require('node:path')
-const { BrowserWindow, session } = require('electron')
-const config = require('../config/env')
-const { assertSecureWebPreferences } = require('../security/hardening')
+const { app, BrowserWindow, session } = require('electron')
+const {
+  assertSecureWebPreferences,
+  installDevToolsLockdown,
+  installHttpsOnlyGuard,
+  installCertificateValidator,
+} = require('../security/hardening')
 
 const UPDATE_PARTITION = 'persist:faktur-desktop-update'
 
 function createUpdateWindow() {
   const updateSession = session.fromPartition(UPDATE_PARTITION)
+  installHttpsOnlyGuard(updateSession)
+  installCertificateValidator(updateSession)
 
   const webPreferences = {
     preload: path.join(__dirname, '..', '..', 'renderer', 'preload', 'update_preload.js'),
@@ -18,7 +24,8 @@ function createUpdateWindow() {
     webSecurity: true,
     allowRunningInsecureContent: false,
     experimentalFeatures: false,
-    devTools: config.devtools,
+    webviewTag: false,
+    devTools: !app.isPackaged,
     session: updateSession,
   }
   assertSecureWebPreferences('update', webPreferences)
@@ -38,6 +45,8 @@ function createUpdateWindow() {
     icon: path.join(__dirname, '..', '..', 'renderer', 'assets', 'favicon.ico'),
     webPreferences,
   })
+
+  installDevToolsLockdown(win)
 
   const htmlPath = path.join(__dirname, '..', '..', 'renderer', 'update.html')
   win.loadFile(htmlPath)

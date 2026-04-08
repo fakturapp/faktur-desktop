@@ -1,14 +1,20 @@
 'use strict'
 
 const path = require('node:path')
-const { BrowserWindow, session } = require('electron')
-const config = require('../config/env')
-const { assertSecureWebPreferences } = require('../security/hardening')
+const { app, BrowserWindow, session } = require('electron')
+const {
+  assertSecureWebPreferences,
+  installDevToolsLockdown,
+  installHttpsOnlyGuard,
+  installCertificateValidator,
+} = require('../security/hardening')
 
 const LOGIN_PARTITION = 'persist:faktur-desktop-login'
 
 function createLoginWindow({ disconnectReason } = {}) {
   const loginSession = session.fromPartition(LOGIN_PARTITION)
+  installHttpsOnlyGuard(loginSession)
+  installCertificateValidator(loginSession)
 
   const webPreferences = {
     preload: path.join(__dirname, '..', '..', 'renderer', 'preload', 'login_preload.js'),
@@ -18,7 +24,8 @@ function createLoginWindow({ disconnectReason } = {}) {
     webSecurity: true,
     allowRunningInsecureContent: false,
     experimentalFeatures: false,
-    devTools: config.devtools,
+    webviewTag: false,
+    devTools: !app.isPackaged,
     session: loginSession,
   }
   assertSecureWebPreferences('login', webPreferences)
@@ -38,6 +45,8 @@ function createLoginWindow({ disconnectReason } = {}) {
     webPreferences,
   })
 
+  installDevToolsLockdown(win)
+
   const htmlPath = path.join(__dirname, '..', '..', 'renderer', 'login.html')
   const search = disconnectReason
     ? new URLSearchParams({ reason: disconnectReason }).toString()
@@ -46,7 +55,6 @@ function createLoginWindow({ disconnectReason } = {}) {
 
   win.once('ready-to-show', () => {
     win.show()
-    if (config.devtools) win.webContents.openDevTools({ mode: 'detach' })
   })
 
   return win
