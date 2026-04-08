@@ -1,6 +1,6 @@
 'use strict'
 
-const { shell } = require('electron')
+const { shell, session } = require('electron')
 const os = require('node:os')
 const oauthClient = require('./oauth_client')
 const pkce = require('./pkce')
@@ -11,7 +11,10 @@ const constants = require('../config/constants')
 
 const { storageKeys, session: sessionStates } = constants
 
+// ---------- Config ----------
 const REFRESH_MARGIN_MS = 60 * 1000
+const SHELL_PARTITION = 'persist:faktur-desktop-shell'
+const LOGIN_PARTITION = 'persist:faktur-desktop-login'
 
 class TokenManager {
   constructor() {
@@ -20,6 +23,7 @@ class TokenManager {
     this.currentFlow = null
   }
 
+  // ---------- Listener API ----------
   onStateChange(cb) {
     this.listeners.add(cb)
     return () => this.listeners.delete(cb)
@@ -36,6 +40,7 @@ class TokenManager {
     }
   }
 
+  // ---------- Bootstrap ----------
   bootstrap() {
     const access = secureStore.get(storageKeys.ACCESS_TOKEN)
     const refresh = secureStore.get(storageKeys.REFRESH_TOKEN)
@@ -47,6 +52,7 @@ class TokenManager {
     return sessionStates.UNAUTHENTICATED
   }
 
+  // ---------- Authorization flow ----------
   async startAuthorizationFlow() {
     if (this.currentFlow) return this.currentFlow.promise
 
@@ -96,6 +102,7 @@ class TokenManager {
     return promise
   }
 
+  // ---------- Access token accessor ----------
   async getAccessToken() {
     const access = secureStore.get(storageKeys.ACCESS_TOKEN)
     const refresh = secureStore.get(storageKeys.REFRESH_TOKEN)
@@ -124,11 +131,13 @@ class TokenManager {
     }
   }
 
+  // ---------- Logout ----------
   async logout({ remoteRevoke = true, reason = 'user_logout' } = {}) {
     const access = secureStore.get(storageKeys.ACCESS_TOKEN)
     const refresh = secureStore.get(storageKeys.REFRESH_TOKEN)
 
     secureStore.clear()
+    await this._wipeAllSessionStorage()
 
     if (remoteRevoke) {
       if (access) await oauthClient.revokeToken({ token: access, hint: 'access_token' })
@@ -138,6 +147,42 @@ class TokenManager {
     this._emit(sessionStates.UNAUTHENTICATED, { reason })
   }
 
+  // ---------- Nuke every browser-side storage bucket ----------
+  async _wipeAllSessionStorage() {
+    const partitions = [SHELL_PARTITION, LOGIN_PARTITION]
+    const wipeOptions = {
+      storages: [
+        'cookies',
+        'filesystem',
+        'indexdb',
+        'localstorage',
+        'shadercache',
+        'websql',
+        'serviceworkers',
+        'cachestorage',
+      ],
+    }
+    for (const partitionName of partitions) {
+      try {
+        const ses = session.fromPartition(partitionName)
+        await ses.clearStorageData(wipeOptions)
+        await ses.clearCache()
+        if (typeof ses.clearAuthCache === 'function') await ses.clearAuthCache()
+        await ses.clearHostResolverCache().catch(() => {})
+      } catch (err) {
+        console.error(`[token-manager] failed to wipe ${partitionName}:`, err?.message || err)
+      }
+    }
+    try {
+      const defaultSession = session.defaultSession
+      await defaultSession.clearStorageData(wipeOptions)
+      await defaultSession.clearCache()
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // ---------- Persistence ----------
   _persistTokenResponse(res) {
     const accessExpiresAt = Date.now() + Number(res.expires_in ?? 3600) * 1000
     const refreshExpiresAt = Date.now() + Number(res.refresh_expires_in ?? 0) * 1000
