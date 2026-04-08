@@ -3,13 +3,16 @@
 const { app, Menu } = require('electron')
 
 // ---------- Dev mode detection ----------
-// True when the app is either unpackaged OR explicitly flagged as
-// development via FAKTUR_ENV=development. All hardening measures that
-// hurt the developer loop (keyboard locks, menu wipe, devtools auto-
-// close, debugger watchdog) are skipped in dev mode.
+// True ONLY when the app is unpackaged (i.e. the developer is running
+// `npm run start:dev` or `electron .` directly from source).
+//
+// We deliberately IGNORE process.env.FAKTUR_ENV in packaged builds so a
+// malicious user cannot set FAKTUR_ENV=development as a system env var
+// to disable every hardening layer. `app.isPackaged` is provided by
+// Electron itself based on whether the binary was signed as an
+// installed app — it cannot be spoofed from userland.
 function isDevMode() {
-  if (!app.isPackaged) return true
-  return process.env.FAKTUR_ENV === 'development'
+  return !app.isPackaged
 }
 
 // ---------- Dangerous launch-flag filter ----------
@@ -201,15 +204,32 @@ function installHttpsOnlyGuard(sessionInstance) {
   sessionInstance.webRequest.onBeforeRequest((details, callback) => {
     try {
       const url = new URL(details.url)
-      if (url.protocol === 'https:' || url.protocol === 'file:' || url.protocol === 'data:') {
+
+      // Safe schemes: HTTPS for network, file/data for bundled assets,
+      // devtools/chrome/chrome-extension for DevTools UI in dev mode.
+      const SAFE_SCHEMES = new Set([
+        'https:',
+        'file:',
+        'data:',
+        'blob:',
+        'devtools:',
+        'chrome:',
+        'chrome-extension:',
+        'chrome-devtools:',
+      ])
+      if (SAFE_SCHEMES.has(url.protocol)) {
         return callback({})
       }
+
+      // Plain HTTP is only allowed on the loopback interface (OAuth
+      // callback).
       if (
         url.protocol === 'http:' &&
         (url.hostname === '127.0.0.1' || url.hostname === 'localhost')
       ) {
         return callback({})
       }
+
       console.warn(`[hardening] blocking non-HTTPS request: ${details.url}`)
       callback({ cancel: true })
     } catch {

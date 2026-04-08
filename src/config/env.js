@@ -38,9 +38,12 @@ function optional(name, fallback) {
 // NOTE: client_secret intentionally REMOVED — the desktop is a public
 // OAuth client and relies exclusively on PKCE. Any secret embedded in
 // the binary is extractable and provides no real protection.
+// FAKTUR_ENV is read only for display/telemetry — it is NEVER used to
+// gate security features. The authoritative dev-mode signal is
+// `app.isPackaged` in src/security/hardening.js.
 const config = Object.freeze({
   env: optional('FAKTUR_ENV', 'production'),
-  devtools: optional('FAKTUR_DEVTOOLS', 'false') === 'true',
+  devtools: !app?.isPackaged,
 
   oauth: {
     clientId: required('FAKTUR_OAUTH_CLIENT_ID'),
