@@ -9,6 +9,26 @@ class SafeStorageError extends Error {
   }
 }
 
+// ---------- Strong-backend enforcement ----------
+// safeStorage can silently fall back to 'basic_text' on Linux when no
+// secret store (libsecret/kwallet) is available. In that mode the tokens
+// are stored in plaintext and offer no protection. We refuse to run in
+// that mode — the user must install a real backend or use a different
+// host. See https://electronjs.org/docs/latest/api/safe-storage
+
+const WEAK_BACKENDS = new Set(['basic_text'])
+
+function getBackend() {
+  if (typeof safeStorage.getSelectedStorageBackend === 'function') {
+    try {
+      return safeStorage.getSelectedStorageBackend()
+    } catch {
+      return 'unknown'
+    }
+  }
+  return 'unknown'
+}
+
 function ensureAvailable() {
   if (!safeStorage.isEncryptionAvailable()) {
     throw new SafeStorageError(
@@ -16,7 +36,16 @@ function ensureAvailable() {
         'On Linux install libsecret-tools (or equivalent) and restart the app.'
     )
   }
+  const backend = getBackend()
+  if (WEAK_BACKENDS.has(backend)) {
+    throw new SafeStorageError(
+      `safeStorage fell back to '${backend}' — refusing to persist secrets. ` +
+        'Install a real secret backend (libsecret, kwallet) and restart.'
+    )
+  }
 }
+
+// ---------- Encrypt / decrypt ----------
 
 function encryptString(plaintext) {
   ensureAvailable()
@@ -42,5 +71,6 @@ module.exports = {
   SafeStorageError,
   encryptString,
   decryptString,
-  isAvailable: () => safeStorage.isEncryptionAvailable(),
+  isAvailable: () => safeStorage.isEncryptionAvailable() && !WEAK_BACKENDS.has(getBackend()),
+  getBackend,
 }
