@@ -1,14 +1,16 @@
 'use strict'
 
-const { ipcMain, shell } = require('electron')
+const { ipcMain, shell, BrowserWindow } = require('electron')
 const constants = require('../config/constants')
 const tokenManager = require('../oauth/token_manager')
+const updater = require('../update/updater')
 const config = require('../config/env')
 
 // ---------- IPC registration ----------
-function registerIpcHandlers({ onSessionChange }) {
+function registerIpcHandlers({ onSessionChange, onUpdateBegin }) {
   const { ipc } = constants
 
+  // ---------- Session ----------
   ipcMain.handle(ipc.SESSION_GET_STATE, () => {
     return { state: tokenManager.state }
   })
@@ -42,9 +44,59 @@ function registerIpcHandlers({ onSessionChange }) {
 
   ipcMain.handle(ipc.GET_APP_INFO, () => {
     return {
-      version: '2.0.0',
+      version: updater.getCurrentVersion(),
       platform: process.platform,
       isDesktop: true,
+    }
+  })
+
+  // ---------- Update ----------
+  ipcMain.handle(ipc.UPDATE_GET_PENDING, () => {
+    return updater.getCachedUpdate()
+  })
+
+  ipcMain.handle(ipc.UPDATE_CHECK, async () => {
+    const info = await updater.checkForUpdate({ silent: true })
+    return info
+  })
+
+  ipcMain.handle(ipc.UPDATE_BEGIN, async () => {
+    if (typeof onUpdateBegin === 'function') {
+      await onUpdateBegin()
+    }
+    return { ok: true }
+  })
+
+  ipcMain.handle(ipc.UPDATE_GET_INFO, () => {
+    return updater.getCachedUpdate()
+  })
+
+  ipcMain.handle(ipc.UPDATE_START_DOWNLOAD, async (event) => {
+    try {
+      const targetWindow = BrowserWindow.fromWebContents(event.sender)
+      await updater.downloadAndInstall({
+        onProgress: (payload) => {
+          if (targetWindow && !targetWindow.isDestroyed()) {
+            targetWindow.webContents.send(ipc.UPDATE_PROGRESS, {
+              phase: 'downloading',
+              ...payload,
+            })
+          }
+        },
+      })
+      if (targetWindow && !targetWindow.isDestroyed()) {
+        targetWindow.webContents.send(ipc.UPDATE_PROGRESS, { phase: 'launching' })
+      }
+      return { ok: true }
+    } catch (err) {
+      const targetWindow = BrowserWindow.fromWebContents(event.sender)
+      if (targetWindow && !targetWindow.isDestroyed()) {
+        targetWindow.webContents.send(ipc.UPDATE_PROGRESS, {
+          phase: 'error',
+          message: err?.message || 'Download failed',
+        })
+      }
+      return { ok: false, error: err?.message || 'Download failed' }
     }
   })
 

@@ -13,8 +13,10 @@ try {
 
 const constants = require('../config/constants')
 const tokenManager = require('../oauth/token_manager')
+const updater = require('../update/updater')
 const { createLoginWindow } = require('../windows/login_window')
 const { createShellWindow } = require('../windows/shell_window')
+const { createUpdateWindow } = require('../windows/update_window')
 const { registerIpcHandlers } = require('../ipc/ipc_handlers')
 const {
   enforceLaunchFlagPolicy,
@@ -78,6 +80,37 @@ async function openForState(state, options = {}) {
   }
 }
 
+// ---------- Update flow ----------
+async function beginUpdate() {
+  if (currentWindow && !currentWindow.isDestroyed()) {
+    currentWindow.removeAllListeners('closed')
+    currentWindow.close()
+    currentWindow = null
+  }
+  currentWindow = createUpdateWindow()
+  currentWindow.on('closed', () => {
+    currentWindow = null
+  })
+}
+
+function pushUpdateToWindows(info) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win.isDestroyed()) continue
+    win.webContents.send(constants.ipc.UPDATE_AVAILABLE, info)
+  }
+}
+
+async function scheduleUpdateCheck() {
+  setTimeout(async () => {
+    const info = await updater.checkForUpdate({ silent: true })
+    if (info) pushUpdateToWindows(info)
+  }, 4000)
+  setInterval(async () => {
+    const info = await updater.checkForUpdate({ silent: true })
+    if (info) pushUpdateToWindows(info)
+  }, 1000 * 60 * 60)
+}
+
 // ---------- Bootstrap ----------
 async function bootstrap() {
   installGlobalContentsGuard([
@@ -105,10 +138,12 @@ async function bootstrap() {
         await openForState(constants.session.UNAUTHENTICATED, { reason: payload.reason })
       }
     },
+    onUpdateBegin: beginUpdate,
   })
 
   const initial = tokenManager.bootstrap()
   await openForState(initial)
+  scheduleUpdateCheck()
 }
 
 app.whenReady().then(bootstrap)
