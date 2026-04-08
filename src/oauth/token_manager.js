@@ -15,6 +15,9 @@ const { storageKeys, session: sessionStates } = constants
 const REFRESH_MARGIN_MS = 60 * 1000
 const SHELL_PARTITION = 'persist:faktur-desktop-shell'
 const LOGIN_PARTITION = 'persist:faktur-desktop-login'
+// Mirror the loopback callback page transition timings so the login
+// window button visually syncs with what the user sees in the browser.
+const LOOPBACK_PROGRESS_MS = 500
 const SUCCESS_DWELL_MS = 900
 
 class TokenManager {
@@ -83,10 +86,15 @@ class TokenManager {
     const promise = (async () => {
       try {
         const { code } = await server.wait
-        this._emit(sessionStates.AUTHENTICATING, { step: 'received_callback' })
-
+        // The loopback page is now showing "Connexion en cours" with a
+        // spinner. Mirror that on the login window button.
         this._emit(sessionStates.AUTHENTICATING, { step: 'exchanging' })
-        const tokenResponse = await oauthClient.exchangeCodeForToken({
+
+        // Run the actual token exchange in parallel with the minimum
+        // visual delay so both UIs hold the spinner state for at least
+        // LOOPBACK_PROGRESS_MS — keeping the loopback page and the
+        // login button visually in sync.
+        const exchangePromise = oauthClient.exchangeCodeForToken({
           code,
           redirectUri,
           codeVerifier,
@@ -96,8 +104,11 @@ class TokenManager {
             os: `${os.type()} ${os.release()}`,
           },
         })
+        const minDelay = new Promise((resolve) => setTimeout(resolve, LOOPBACK_PROGRESS_MS))
+        const [tokenResponse] = await Promise.all([exchangePromise, minDelay])
         this._persistTokenResponse(tokenResponse)
 
+        // Both UIs flip to the success state at the same instant.
         this._emit(sessionStates.AUTHENTICATING, { step: 'success' })
         await new Promise((resolve) => setTimeout(resolve, SUCCESS_DWELL_MS))
         this._emit(sessionStates.AUTHENTICATED)

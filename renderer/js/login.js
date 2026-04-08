@@ -126,12 +126,6 @@ function setStage(stage) {
       break
 
     case 'received_callback':
-      button.disabled = true
-      iconSlot.innerHTML = SPINNER_HTML
-      label.textContent = 'Connexion terminée'
-      halo.classList.add('pulsing')
-      break
-
     case 'exchanging':
       button.disabled = true
       iconSlot.innerHTML = SPINNER_HTML
