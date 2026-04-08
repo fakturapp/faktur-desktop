@@ -212,7 +212,7 @@ const FAKTUR_LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40
 
 const BRAND_HEADER = `<div class="brand">
   <div class="brand-logo">${FAKTUR_LOGO_SVG}</div>
-  <span class="brand-name">Faktur Desktop</span>
+  <span class="brand-name">Faktur</span>
 </div>`
 
 const SUCCESS_HTML = PAGE_SHELL(
