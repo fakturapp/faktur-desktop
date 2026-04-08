@@ -1,20 +1,26 @@
 'use strict'
 
 const path = require('node:path')
-const { BrowserWindow, shell } = require('electron')
+const { BrowserWindow, shell, session } = require('electron')
 const config = require('../config/env')
 const tokenManager = require('../oauth/token_manager')
 const { exchangeForDashboardSession } = require('../oauth/session_bridge')
+const { computeDesktopProofHeader } = require('../security/desktop_proof')
 
+// ---------- Constants ----------
 const DESKTOP_USER_AGENT_SUFFIX = 'FakturDesktop/2.0'
+const SHELL_PARTITION = 'persist:faktur-desktop-shell'
 
+// ---------- Public factory ----------
 async function createShellWindow({ onFatalError } = {}) {
+  const shellSession = session.fromPartition(SHELL_PARTITION)
+
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 700,
-    title: 'Faktur',
+    title: 'Faktur Desktop',
     backgroundColor: '#080808',
     show: true,
     autoHideMenuBar: true,
@@ -23,17 +29,25 @@ async function createShellWindow({ onFatalError } = {}) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      experimentalFeatures: false,
       devTools: config.devtools,
+      session: shellSession,
     },
   })
 
   const defaultUa = win.webContents.userAgent
   win.webContents.setUserAgent(`${defaultUa} ${DESKTOP_USER_AGENT_SUFFIX}`)
 
+  // ---------- Loading screen ----------
   const loadingPath = path.join(__dirname, '..', '..', 'renderer', 'loading.html')
   win.loadFile(loadingPath).catch(() => {})
 
+  // ---------- Hardening ----------
   installNavigationGuard(win, onFatalError)
+  installDesktopProofHeader(win)
+  installPermissionBlocker(shellSession)
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url).catch(() => {})
@@ -42,6 +56,7 @@ async function createShellWindow({ onFatalError } = {}) {
 
   if (config.devtools) win.webContents.openDevTools({ mode: 'detach' })
 
+  // ---------- Session bridge + dashboard load ----------
   ;(async () => {
     let bridgedSession = null
     try {
@@ -89,15 +104,20 @@ async function createShellWindow({ onFatalError } = {}) {
   return win
 }
 
+// ---------- Navigation guard ----------
 function installNavigationGuard(win, onFatalError) {
   const dashboardOrigin = new URL(config.urls.dashboard).origin
+
+  const handleLoginRedirect = () => {
+    setImmediate(() => onFatalError?.('session_expired'))
+  }
 
   win.webContents.on('will-navigate', (event, url) => {
     try {
       const target = new URL(url)
       if (target.origin === dashboardOrigin && target.pathname.startsWith('/login')) {
         event.preventDefault()
-        setImmediate(() => onFatalError?.('session_expired'))
+        handleLoginRedirect()
         return
       }
       const allowed = [
@@ -119,7 +139,7 @@ function installNavigationGuard(win, onFatalError) {
     try {
       const target = new URL(url)
       if (target.origin === dashboardOrigin && target.pathname.startsWith('/login')) {
-        setImmediate(() => onFatalError?.('session_expired'))
+        handleLoginRedirect()
       }
     } catch {
       /* ignore */
@@ -127,6 +147,45 @@ function installNavigationGuard(win, onFatalError) {
   })
 }
 
+// ---------- Desktop cryptographic proof header ----------
+// Adds X-Faktur-Desktop-Proof on every API request so the backend can
+// distinguish a real desktop client from a browser that spoofs the UA.
+function installDesktopProofHeader(win) {
+  const apiHost = new URL(config.api.baseUrl).host
+  const ses = win.webContents.session
+
+  ses.webRequest.onBeforeSendHeaders(async (details, callback) => {
+    try {
+      const target = new URL(details.url)
+      if (target.host !== apiHost) {
+        return callback({ requestHeaders: details.requestHeaders })
+      }
+      const headers = { ...details.requestHeaders }
+      const proof = computeDesktopProofHeader()
+      if (proof) {
+        headers['X-Faktur-Desktop-Proof'] = proof.signature
+        headers['X-Faktur-Desktop-Nonce'] = proof.nonce
+        headers['X-Faktur-Desktop-Ts'] = String(proof.ts)
+      }
+      callback({ requestHeaders: headers })
+    } catch {
+      callback({ requestHeaders: details.requestHeaders })
+    }
+  })
+}
+
+// ---------- Permission blocker ----------
+// The dashboard is trusted content but we still block notifications,
+// media devices, geolocation, etc. by default — the user can re-enable
+// from the OS permissions panel if they need them.
+function installPermissionBlocker(sessionInstance) {
+  sessionInstance.setPermissionRequestHandler((_webContents, permission, callback) => {
+    const allowed = new Set(['clipboard-read', 'clipboard-sanitized-write'])
+    callback(allowed.has(permission))
+  })
+}
+
+// ---------- Bootstrap script injection ----------
 async function injectBootstrapScript(win, bridgedSession) {
   const payload = JSON.stringify({
     token: bridgedSession.token,
@@ -165,4 +224,4 @@ async function injectBootstrapScript(win, bridgedSession) {
   }
 }
 
-module.exports = { createShellWindow }
+module.exports = { createShellWindow, SHELL_PARTITION }

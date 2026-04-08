@@ -1,10 +1,14 @@
 'use strict'
 
 const path = require('node:path')
-const { BrowserWindow } = require('electron')
+const { BrowserWindow, session } = require('electron')
 const config = require('../config/env')
 
+const LOGIN_PARTITION = 'persist:faktur-desktop-login'
+
 function createLoginWindow({ disconnectReason } = {}) {
+  const loginSession = session.fromPartition(LOGIN_PARTITION)
+
   const win = new BrowserWindow({
     width: 480,
     height: 640,
@@ -12,7 +16,7 @@ function createLoginWindow({ disconnectReason } = {}) {
     minimizable: true,
     maximizable: false,
     fullscreenable: false,
-    title: 'Faktur — Connexion',
+    title: 'Faktur Desktop — Connexion',
     backgroundColor: '#080808',
     show: false,
     autoHideMenuBar: true,
@@ -21,7 +25,11 @@ function createLoginWindow({ disconnectReason } = {}) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
+      experimentalFeatures: false,
       devTools: config.devtools,
+      session: loginSession,
     },
   })
 
@@ -39,4 +47,4 @@ function createLoginWindow({ disconnectReason } = {}) {
   return win
 }
 
-module.exports = { createLoginWindow }
+module.exports = { createLoginWindow, LOGIN_PARTITION }
