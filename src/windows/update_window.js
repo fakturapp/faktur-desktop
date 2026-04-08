@@ -50,8 +50,19 @@ function createUpdateWindow() {
   installDevToolsLockdown(win)
 
   const htmlPath = path.join(__dirname, '..', '..', 'renderer', 'update.html')
-  win.loadFile(htmlPath)
-  win.once('ready-to-show', () => win.show())
+  win.loadFile(htmlPath).catch((err) => {
+    console.error('[update] loadFile failed:', err?.message || err)
+  })
+
+  let shown = false
+  const reveal = () => {
+    if (shown || win.isDestroyed()) return
+    shown = true
+    win.show()
+  }
+  win.once('ready-to-show', reveal)
+  win.webContents.once('did-finish-load', reveal)
+  setTimeout(reveal, 2500)
 
   return win
 }

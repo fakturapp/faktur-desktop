@@ -75,6 +75,7 @@
       width: 100%;
       max-width: 780px;
       z-index: 1;
+      opacity: 1;
     }
 
     /* ---------- Disconnect banner ---------- */
@@ -316,12 +317,11 @@
     }
     .error.visible { display: block; }
 
-    /* ---------- Appear animation ---------- */
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    main { animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+    main { animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 
     /* ---------- Narrow window fallback ---------- */
     @media (max-width: 720px) {
