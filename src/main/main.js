@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, session } = require('electron')
 
 // ---------- Env (must load before app.whenReady for early failures) ----------
 let config
@@ -21,10 +21,19 @@ const { registerIpcHandlers } = require('../ipc/ipc_handlers')
 const {
   enforceLaunchFlagPolicy,
   installGlobalContentsGuard,
+  installHttpsOnlyGuard,
+  installCertificateValidator,
+  removeApplicationMenu,
+  startDebuggerWatchdog,
 } = require('../security/hardening')
 
-// ---------- Launch-flag policy (must run before anything else) ----------
+// ---------- Launch-flag policy (runs before any other Electron API) ----------
 enforceLaunchFlagPolicy()
+
+// ---------- Global sandbox ----------
+// Forces every renderer process the app spawns to run inside a
+// restricted Chromium sandbox. Must be called before app.whenReady.
+app.enableSandbox()
 
 // ---------- Single-instance lock ----------
 const gotTheLock = app.requestSingleInstanceLock()
@@ -113,6 +122,12 @@ async function scheduleUpdateCheck() {
 
 // ---------- Bootstrap ----------
 async function bootstrap() {
+  // ---------- Kill the application menu ----------
+  // Removes every "View → Toggle DevTools" entry from the native menu
+  // bar. Must run before windows are created.
+  removeApplicationMenu()
+
+  // ---------- Global web-contents guard ----------
   installGlobalContentsGuard([
     config.urls.dashboard,
     config.api.baseUrl,
@@ -121,6 +136,21 @@ async function bootstrap() {
     'file://',
   ])
 
+  // ---------- HTTPS-only + cert validation on every session ----------
+  for (const sessionInstance of [
+    session.defaultSession,
+    session.fromPartition('persist:faktur-desktop-shell'),
+    session.fromPartition('persist:faktur-desktop-login'),
+    session.fromPartition('persist:faktur-desktop-update'),
+  ]) {
+    installHttpsOnlyGuard(sessionInstance)
+    installCertificateValidator(sessionInstance)
+  }
+
+  // ---------- Runtime debugger detection (prod only) ----------
+  startDebuggerWatchdog()
+
+  // ---------- IPC wiring ----------
   registerIpcHandlers({
     onSessionChange: async (payload) => {
       for (const win of BrowserWindow.getAllWindows()) {
