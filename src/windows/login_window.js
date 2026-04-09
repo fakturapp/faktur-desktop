@@ -10,7 +10,7 @@ const {
   isDevMode,
 } = require('../security/hardening')
 
-const LOGIN_PARTITION = 'persist:faktur-desktop-login'
+const LOGIN_PARTITION = 'faktur-desktop-login-v2'
 
 function createLoginWindow({ disconnectReason } = {}) {
   const loginSession = session.fromPartition(LOGIN_PARTITION)
@@ -51,16 +51,30 @@ function createLoginWindow({ disconnectReason } = {}) {
   if (isDevMode()) win.webContents.openDevTools({ mode: 'detach' })
 
   const htmlPath = path.join(__dirname, '..', '..', 'renderer', 'login.html')
-  const search = disconnectReason
-    ? new URLSearchParams({ reason: disconnectReason }).toString()
+  const loadOptions = disconnectReason
+    ? { search: new URLSearchParams({ reason: disconnectReason }).toString() }
     : undefined
 
-  win.loadFile(htmlPath, search ? { search } : undefined).catch((err) => {
-    console.error('[login] loadFile failed:', err?.message || err)
-  })
+  const attemptLoad = (attempt = 1) => {
+    if (win.isDestroyed()) return
+    win.loadFile(htmlPath, loadOptions).catch((err) => {
+      console.error(
+        `[login] loadFile attempt ${attempt} failed:`,
+        err?.message || err
+      )
+      if (attempt < 3 && !win.isDestroyed()) {
+        setTimeout(() => attemptLoad(attempt + 1), 250 * attempt)
+      }
+    })
+  }
+  attemptLoad()
 
-  win.webContents.on('did-fail-load', (_evt, code, desc, url) => {
+  win.webContents.on('did-fail-load', (_evt, code, desc, url, isMainFrame) => {
+    if (!isMainFrame) return
     console.error(`[login] did-fail-load ${code} ${desc} ${url}`)
+    if (!win.isDestroyed()) {
+      setTimeout(() => attemptLoad(99), 300)
+    }
   })
   win.webContents.on('render-process-gone', (_evt, details) => {
     console.error('[login] render-process-gone:', details?.reason)

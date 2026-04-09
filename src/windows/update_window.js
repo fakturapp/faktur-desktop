@@ -10,7 +10,7 @@ const {
   isDevMode,
 } = require('../security/hardening')
 
-const UPDATE_PARTITION = 'persist:faktur-desktop-update'
+const UPDATE_PARTITION = 'faktur-desktop-update-v2'
 
 function createUpdateWindow() {
   const updateSession = session.fromPartition(UPDATE_PARTITION)

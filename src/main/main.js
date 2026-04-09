@@ -1,6 +1,8 @@
 'use strict'
 
 const { app, BrowserWindow, session } = require('electron')
+const fs = require('node:fs')
+const path = require('node:path')
 
 let config
 try {
@@ -112,8 +114,34 @@ async function scheduleUpdateCheck() {
   }, 1000 * 60 * 60)
 }
 
+function purgeStalePartitionDirs() {
+  const stale = [
+    'Partitions/faktur-desktop-login',
+    'Partitions/faktur-desktop-update',
+    'Partitions/persist%3Afaktur-desktop-login',
+    'Partitions/persist%3Afaktur-desktop-update',
+  ]
+  const base = app.getPath('userData')
+  for (const rel of stale) {
+    try {
+      const full = path.join(base, rel)
+      if (fs.existsSync(full)) {
+        fs.rmSync(full, {
+          recursive: true,
+          force: true,
+          maxRetries: 5,
+          retryDelay: 150,
+        })
+      }
+    } catch {
+    }
+  }
+}
+
 async function bootstrap() {
   removeApplicationMenu()
+
+  purgeStalePartitionDirs()
 
   installGlobalContentsGuard([
     config.urls.dashboard,
@@ -126,8 +154,8 @@ async function bootstrap() {
   for (const sessionInstance of [
     session.defaultSession,
     session.fromPartition('persist:faktur-desktop-shell'),
-    session.fromPartition('persist:faktur-desktop-login'),
-    session.fromPartition('persist:faktur-desktop-update'),
+    session.fromPartition('faktur-desktop-login-v2'),
+    session.fromPartition('faktur-desktop-update-v2'),
   ]) {
     installHttpsOnlyGuard(sessionInstance)
     installCertificateValidator(sessionInstance)
