@@ -55,33 +55,46 @@ function createLoginWindow({ disconnectReason } = {}) {
     ? { search: new URLSearchParams({ reason: disconnectReason }).toString() }
     : undefined
 
-  const attemptLoad = (attempt = 1) => {
-    if (win.isDestroyed()) return
-    win.loadFile(htmlPath, loadOptions).catch((err) => {
+  const MAX_LOAD_ATTEMPTS = 3
+  let totalAttempts = 0
+  let loading = false
+  let loaded = false
+
+  const attemptLoad = () => {
+    if (win.isDestroyed() || loaded || loading) return
+    if (totalAttempts >= MAX_LOAD_ATTEMPTS) {
       console.error(
-        `[login] loadFile attempt ${attempt} failed:`,
+        `[login] giving up after ${totalAttempts} loadFile attempts — check asar contents and fuses`
+      )
+      return
+    }
+    totalAttempts += 1
+    loading = true
+    win.loadFile(htmlPath, loadOptions).catch((err) => {
+      loading = false
+      console.error(
+        `[login] loadFile attempt ${totalAttempts} failed:`,
         err?.message || err
       )
-      if (attempt < 3 && !win.isDestroyed()) {
-        setTimeout(() => attemptLoad(attempt + 1), 250 * attempt)
-      }
     })
   }
   attemptLoad()
 
   win.webContents.on('did-fail-load', (_evt, code, desc, url, isMainFrame) => {
     if (!isMainFrame) return
+    loading = false
     console.error(`[login] did-fail-load ${code} ${desc} ${url}`)
-    if (!win.isDestroyed()) {
-      setTimeout(() => attemptLoad(99), 300)
+    if (!win.isDestroyed() && totalAttempts < MAX_LOAD_ATTEMPTS) {
+      setTimeout(attemptLoad, 300 * totalAttempts)
     }
+  })
+  win.webContents.on('did-finish-load', () => {
+    loaded = true
+    loading = false
+    if (!win.isDestroyed()) win.focus()
   })
   win.webContents.on('render-process-gone', (_evt, details) => {
     console.error('[login] render-process-gone:', details?.reason)
-  })
-
-  win.webContents.once('did-finish-load', () => {
-    if (!win.isDestroyed()) win.focus()
   })
 
   return win
