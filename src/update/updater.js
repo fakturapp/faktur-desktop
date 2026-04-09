@@ -3,7 +3,7 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
-const { app } = require('electron')
+const { app, BrowserWindow } = require('electron')
 
 const GITHUB_LATEST_URL =
   'https://api.github.com/repos/fakturapp/faktur-desktop/releases/latest'
@@ -178,14 +178,34 @@ async function downloadAndInstall({ onProgress } = {}) {
 
   emit({ type: 'downloaded', path: installerPath })
 
-  const args = ['/S', '--force-run']
+  if (onProgress) {
+    onProgress({ phase: 'installing', percent: 100, total, downloaded })
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 1500))
+
+  try {
+    app.releaseSingleInstanceLock()
+  } catch {
+  }
+
+  const args = ['--updated']
   const child = spawn(installerPath, args, {
     detached: true,
     stdio: 'ignore',
   })
   child.unref()
 
-  setTimeout(() => app.quit(), 200)
+  await new Promise((resolve) => setTimeout(resolve, 400))
+
+  for (const win of BrowserWindow.getAllWindows()) {
+    try {
+      if (!win.isDestroyed()) win.destroy()
+    } catch {
+    }
+  }
+
+  app.exit(0)
   return { installerPath }
 }
 

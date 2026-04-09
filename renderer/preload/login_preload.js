@@ -18,4 +18,12 @@ contextBridge.exposeInMainWorld('faktur', {
     ipcRenderer.on('session:state-changed', handler)
     return () => ipcRenderer.removeListener('session:state-changed', handler)
   },
+  getPendingUpdate: () => ipcRenderer.invoke('update:get-pending'),
+  beginUpdate: () => ipcRenderer.invoke('update:begin'),
+  onUpdateAvailable: (listener) => {
+    if (typeof listener !== 'function') return () => {}
+    const handler = (_event, payload) => listener(payload)
+    ipcRenderer.on('update:available', handler)
+    return () => ipcRenderer.removeListener('update:available', handler)
+  },
 })

@@ -2,13 +2,9 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; frame-ancestors 'none';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; frame-ancestors 'none';" />
   <title>Faktur Desktop — Connexion</title>
   <link rel="icon" type="image/x-icon" href="./assets/favicon.ico" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     /* ---------- Design tokens ---------- */
@@ -42,7 +38,7 @@
       margin: 0;
       padding: 0;
       min-height: 100vh;
-      font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif;
       background: var(--bg);
       color: var(--fg);
       -webkit-font-smoothing: antialiased;
@@ -184,6 +180,57 @@
       letter-spacing: 0.02em;
     }
 
+    .update-pill {
+      position: relative;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0 0;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      border: 1px solid var(--primary-ring);
+      color: var(--primary-hover);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.005em;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      max-width: 100%;
+    }
+    .update-pill.visible { display: inline-flex; }
+    .update-pill:hover {
+      background: rgba(99, 102, 241, 0.20);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.25);
+    }
+    .update-pill:active { transform: translateY(0); }
+    .update-pill:disabled {
+      opacity: 0.6;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+    .update-pill-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary-hover);
+      box-shadow: 0 0 8px var(--primary-hover);
+      animation: pulseDot 1.6s ease-in-out infinite;
+    }
+    .update-pill-version {
+      color: var(--fg-muted);
+      font-weight: 500;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
     /* ---------- Right panel — actions ---------- */
     .right {
       padding: 44px 40px;
@@ -321,7 +368,10 @@
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    main { animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+    main {
+      animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+      animation-delay: 0ms;
+    }
 
     /* ---------- Narrow window fallback ---------- */
     @media (max-width: 720px) {
@@ -353,6 +403,13 @@
         <p class="left-tagline">
           Facturation professionnelle, chiffrée de bout en bout.
         </p>
+
+        <button id="update-pill" class="update-pill" type="button">
+          <span class="update-pill-dot"></span>
+          <span>Mise à jour disponible</span>
+          <span id="update-pill-version" class="update-pill-version"></span>
+        </button>
+
         <p class="left-footer">v<span id="app-version">2.1.0</span></p>
       </aside>
 

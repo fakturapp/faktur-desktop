@@ -40,7 +40,8 @@ function createLoginWindow({ disconnectReason } = {}) {
     fullscreenable: false,
     title: 'Faktur Desktop — Connexion',
     backgroundColor: '#080808',
-    show: false,
+    show: true,
+    paintWhenInitiallyHidden: true,
     autoHideMenuBar: true,
     icon: path.join(__dirname, '..', '..', 'renderer', 'assets', 'favicon.ico'),
     webPreferences,
@@ -65,16 +66,9 @@ function createLoginWindow({ disconnectReason } = {}) {
     console.error('[login] render-process-gone:', details?.reason)
   })
 
-  let shown = false
-  const reveal = () => {
-    if (shown || win.isDestroyed()) return
-    shown = true
-    win.show()
-    win.focus()
-  }
-  win.once('ready-to-show', reveal)
-  win.webContents.once('did-finish-load', reveal)
-  setTimeout(reveal, 2500)
+  win.webContents.once('did-finish-load', () => {
+    if (!win.isDestroyed()) win.focus()
+  })
 
   return win
 }

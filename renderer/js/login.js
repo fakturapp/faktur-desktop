@@ -8,6 +8,8 @@ const errorBox = document.getElementById('error')
 const banner = document.getElementById('banner')
 const bannerTitle = document.getElementById('banner-title')
 const bannerMessage = document.getElementById('banner-message')
+const updatePill = document.getElementById('update-pill')
+const updatePillVersion = document.getElementById('update-pill-version')
 
 const DISCONNECT_MESSAGES = {
   token_invalid: {
@@ -171,6 +173,41 @@ async function startAuth(intent) {
 button.addEventListener('click', () => startAuth('login'))
 if (registerBtn) {
   registerBtn.addEventListener('click', () => startAuth('register'))
+}
+
+function showUpdatePill(info) {
+  if (!info || !updatePill) return
+  if (updatePillVersion && info.version) {
+    updatePillVersion.textContent = `v${info.version}`
+  }
+  updatePill.classList.add('visible')
+}
+
+if (window.faktur?.getPendingUpdate) {
+  window.faktur
+    .getPendingUpdate()
+    .then((info) => {
+      if (info) showUpdatePill(info)
+    })
+    .catch(() => {})
+}
+
+if (window.faktur?.onUpdateAvailable) {
+  window.faktur.onUpdateAvailable((info) => {
+    if (info) showUpdatePill(info)
+  })
+}
+
+if (updatePill) {
+  updatePill.addEventListener('click', async () => {
+    if (updatePill.disabled) return
+    updatePill.disabled = true
+    try {
+      await window.faktur?.beginUpdate?.()
+    } catch {
+      updatePill.disabled = false
+    }
+  })
 }
 
 if (window.faktur?.onSessionChange) {

@@ -1,6 +1,6 @@
 {
   "name": "faktur-desktop",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "Client de bureau Faktur — OAuth2 + coffre-fort chiffré",
   "author": {
     "name": "danbenba",

@@ -105,7 +105,7 @@ async function scheduleUpdateCheck() {
   setTimeout(async () => {
     const info = await updater.checkForUpdate({ silent: true })
     if (info) pushUpdateToWindows(info)
-  }, 4000)
+  }, 800)
   setInterval(async () => {
     const info = await updater.checkForUpdate({ silent: true })
     if (info) pushUpdateToWindows(info)

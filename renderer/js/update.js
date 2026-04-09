@@ -6,6 +6,7 @@ const downloadedEl = document.getElementById('downloaded')
 const percentEl = document.getElementById('percent')
 const errorEl = document.getElementById('error')
 const versionEl = document.getElementById('target-version')
+const titleEl = document.getElementById('title')
 
 function formatBytes(n) {
   if (!n || n < 1024) return '0 MB'
@@ -32,6 +33,16 @@ function showError(msg) {
 
     if (phase === 'error') {
       showError(message || 'Erreur inconnue')
+      return
+    }
+    if (phase === 'installing') {
+      if (titleEl) titleEl.textContent = 'Installation va commencer'
+      statusEl.textContent = 'Fermeture de Faktur pour lancer l’installeur…'
+      bar.style.width = '100%'
+      percentEl.textContent = '100%'
+      if (typeof total === 'number' && total > 0) {
+        downloadedEl.textContent = `${formatBytes(total)} / ${formatBytes(total)}`
+      }
       return
     }
     if (phase === 'launching') {

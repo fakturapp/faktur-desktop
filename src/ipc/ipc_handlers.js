@@ -89,15 +89,12 @@ function registerIpcHandlers({ onSessionChange, onUpdateBegin }) {
         onProgress: (payload) => {
           if (targetWindow && !targetWindow.isDestroyed()) {
             targetWindow.webContents.send(ipc.UPDATE_PROGRESS, {
-              phase: 'downloading',
+              phase: payload?.phase || 'downloading',
               ...payload,
             })
           }
         },
       })
-      if (targetWindow && !targetWindow.isDestroyed()) {
-        targetWindow.webContents.send(ipc.UPDATE_PROGRESS, { phase: 'launching' })
-      }
       return { ok: true }
     } catch (err) {
       const targetWindow = BrowserWindow.fromWebContents(event.sender)

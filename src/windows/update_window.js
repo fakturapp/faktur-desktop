@@ -41,7 +41,8 @@ function createUpdateWindow() {
     closable: false,
     title: 'Faktur Desktop — Mise à jour',
     backgroundColor: '#080808',
-    show: false,
+    show: true,
+    paintWhenInitiallyHidden: true,
     autoHideMenuBar: true,
     icon: path.join(__dirname, '..', '..', 'renderer', 'assets', 'favicon.ico'),
     webPreferences,
@@ -53,16 +54,6 @@ function createUpdateWindow() {
   win.loadFile(htmlPath).catch((err) => {
     console.error('[update] loadFile failed:', err?.message || err)
   })
-
-  let shown = false
-  const reveal = () => {
-    if (shown || win.isDestroyed()) return
-    shown = true
-    win.show()
-  }
-  win.once('ready-to-show', reveal)
-  win.webContents.once('did-finish-load', reveal)
-  setTimeout(reveal, 2500)
 
   return win
 }
