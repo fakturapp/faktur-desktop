@@ -97,9 +97,15 @@ async function checkForUpdate({ silent = false } = {}) {
 
     if (!semverGt(remote.parsed, currentParsed)) {
       cachedResult = null
-      emit({ type: 'none', current: currentVersion })
+      console.log(
+        `[updater] no update: installed v${currentVersion} >= latest v${remote.parsed.join('.')} (tag: ${remote.raw})`
+      )
+      emit({ type: 'none', current: currentVersion, latest: remote.parsed.join('.') })
       return null
     }
+    console.log(
+      `[updater] update available: v${currentVersion} -> v${remote.parsed.join('.')}`
+    )
 
     const asset = (data.assets || []).find((a) => a.name === INSTALLER_FILENAME)
     if (!asset) {
