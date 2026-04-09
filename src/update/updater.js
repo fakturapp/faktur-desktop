@@ -189,14 +189,40 @@ async function downloadAndInstall({ onProgress } = {}) {
   } catch {
   }
 
-  const args = ['--updated']
-  const child = spawn(installerPath, args, {
+  const currentExe = process.execPath
+  const trampolineScript = [
+    '@echo off',
+    'timeout /t 2 /nobreak >nul 2>&1',
+    `"${installerPath}" --updated`,
+    'if errorlevel 1 (',
+    '  timeout /t 1 /nobreak >nul 2>&1',
+    ')',
+    'timeout /t 2 /nobreak >nul 2>&1',
+    `if exist "${currentExe}" (`,
+    `  start "" "${currentExe}"`,
+    ')',
+    'exit /b 0',
+    '',
+  ].join('\r\n')
+
+  const trampolinePath = path.join(
+    app.getPath('temp'),
+    `faktur-updater-${Date.now()}.cmd`
+  )
+  try {
+    fs.writeFileSync(trampolinePath, trampolineScript, 'utf8')
+  } catch (err) {
+    console.error('[updater] failed to write trampoline:', err?.message || err)
+  }
+
+  const trampolineChild = spawn('cmd.exe', ['/c', trampolinePath], {
     detached: true,
     stdio: 'ignore',
+    windowsHide: true,
   })
-  child.unref()
+  trampolineChild.unref()
 
-  await new Promise((resolve) => setTimeout(resolve, 400))
+  await new Promise((resolve) => setTimeout(resolve, 500))
 
   for (const win of BrowserWindow.getAllWindows()) {
     try {

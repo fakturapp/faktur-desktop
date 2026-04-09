@@ -163,36 +163,44 @@ function installDevToolsLockdown(win) {
 }
 
 // ---------- HTTPS-only network policy ----------
+const LOCAL_SCHEME_PREFIXES = [
+  'file:',
+  'data:',
+  'blob:',
+  'devtools:',
+  'chrome:',
+  'chrome-extension:',
+  'chrome-devtools:',
+  'chrome-error:',
+  'about:',
+]
+
 function installHttpsOnlyGuard(sessionInstance) {
   sessionInstance.webRequest.onBeforeRequest((details, callback) => {
-    try {
-      const url = new URL(details.url)
+    const raw = typeof details.url === 'string' ? details.url : ''
 
-      const SAFE_SCHEMES = new Set([
-        'https:',
-        'file:',
-        'data:',
-        'blob:',
-        'devtools:',
-        'chrome:',
-        'chrome-extension:',
-        'chrome-devtools:',
-      ])
-      if (SAFE_SCHEMES.has(url.protocol)) {
+    for (const prefix of LOCAL_SCHEME_PREFIXES) {
+      if (raw.startsWith(prefix)) {
         return callback({})
       }
+    }
 
+    try {
+      const url = new URL(raw)
+      if (url.protocol === 'https:') {
+        return callback({})
+      }
       if (
         url.protocol === 'http:' &&
         (url.hostname === '127.0.0.1' || url.hostname === 'localhost')
       ) {
         return callback({})
       }
-
-      console.warn(`[hardening] blocking non-HTTPS request: ${details.url}`)
+      console.warn(`[hardening] blocking non-HTTPS request: ${raw}`)
       callback({ cancel: true })
     } catch {
-      callback({ cancel: true })
+      console.warn(`[hardening] could not parse request URL, allowing: ${raw}`)
+      callback({})
     }
   })
 }
