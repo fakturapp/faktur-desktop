@@ -54,6 +54,18 @@ function getCurrentVersion() {
 let cachedResult = null
 const listeners = new Set()
 
+const JUST_UPDATED_SUPPRESS_MS = 5 * 60 * 1000
+const _justUpdatedAt = process.argv.includes('--updated') ? Date.now() : null
+
+function wasJustUpdated() {
+  return _justUpdatedAt !== null
+}
+
+function _isUpdateSuppressed() {
+  if (_justUpdatedAt === null) return false
+  return Date.now() - _justUpdatedAt < JUST_UPDATED_SUPPRESS_MS
+}
+
 function onUpdateEvent(cb) {
   listeners.add(cb)
   return () => listeners.delete(cb)
@@ -69,6 +81,10 @@ function emit(event) {
 }
 
 async function checkForUpdate({ silent = false } = {}) {
+  if (_isUpdateSuppressed()) {
+    console.log('[updater] skipping check — launched with --updated flag (just installed)')
+    return null
+  }
   try {
     const res = await fetch(GITHUB_LATEST_URL, {
       headers: {
@@ -195,18 +211,11 @@ async function downloadAndInstall({ onProgress } = {}) {
   } catch {
   }
 
-  const currentExe = process.execPath
   const trampolineScript = [
     '@echo off',
+    'echo Faktur Desktop is updating, please wait...',
     'timeout /t 2 /nobreak >nul 2>&1',
-    `"${installerPath}" --updated`,
-    'if errorlevel 1 (',
-    '  timeout /t 1 /nobreak >nul 2>&1',
-    ')',
-    'timeout /t 2 /nobreak >nul 2>&1',
-    `if exist "${currentExe}" (`,
-    `  start "" "${currentExe}"`,
-    ')',
+    `"${installerPath}"`,
     'exit /b 0',
     '',
   ].join('\r\n')
@@ -248,5 +257,6 @@ module.exports = {
   onUpdateEvent,
   semverGt,
   getCurrentVersion,
+  wasJustUpdated,
   INSTALLER_FILENAME,
 }

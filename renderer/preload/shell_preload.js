@@ -4,7 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('fakturDesktop', {
   isDesktop: true,
-  version: '2.1.0',
+  version: '1.1.2',
   platform: process.platform,
 
   getSessionState: () => ipcRenderer.invoke('session:get-state'),

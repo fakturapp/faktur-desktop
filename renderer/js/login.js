@@ -8,8 +8,11 @@ const errorBox = document.getElementById('error')
 const banner = document.getElementById('banner')
 const bannerTitle = document.getElementById('banner-title')
 const bannerMessage = document.getElementById('banner-message')
-const updatePill = document.getElementById('update-pill')
-const updatePillVersion = document.getElementById('update-pill-version')
+const updateCard = document.getElementById('update-card')
+const updateCardVersion = document.getElementById('update-card-version')
+const updateCardCurrent = document.getElementById('update-card-current')
+const updateCardArrow = document.getElementById('update-card-arrow')
+const updateCardBtn = document.getElementById('update-card-btn')
 
 const DISCONNECT_MESSAGES = {
   token_invalid: {
@@ -175,37 +178,52 @@ if (registerBtn) {
   registerBtn.addEventListener('click', () => startAuth('register'))
 }
 
-function showUpdatePill(info) {
-  if (!info || !updatePill) return
-  if (updatePillVersion && info.version) {
-    updatePillVersion.textContent = `v${info.version}`
+function showUpdateCard(info) {
+  if (!info || !updateCard) return
+  // Fill in version labels
+  if (updateCardVersion && info.version) {
+    updateCardVersion.textContent = `v${info.version}`
   }
-  updatePill.classList.add('visible')
+  if (updateCardCurrent && info.currentVersion) {
+    updateCardCurrent.textContent = `v${info.currentVersion}`
+    if (updateCardArrow) updateCardArrow.textContent = ' → '
+  }
+  updateCard.classList.add('visible')
+}
+
+if (window.faktur?.getAppInfo) {
+  window.faktur
+    .getAppInfo()
+    .then((appInfo) => {
+      const versionEl = document.getElementById('app-version')
+      if (versionEl && appInfo?.version) versionEl.textContent = appInfo.version
+    })
+    .catch(() => {})
 }
 
 if (window.faktur?.getPendingUpdate) {
   window.faktur
     .getPendingUpdate()
     .then((info) => {
-      if (info) showUpdatePill(info)
+      if (info) showUpdateCard(info)
     })
     .catch(() => {})
 }
 
 if (window.faktur?.onUpdateAvailable) {
   window.faktur.onUpdateAvailable((info) => {
-    if (info) showUpdatePill(info)
+    if (info) showUpdateCard(info)
   })
 }
 
-if (updatePill) {
-  updatePill.addEventListener('click', async () => {
-    if (updatePill.disabled) return
-    updatePill.disabled = true
+if (updateCardBtn) {
+  updateCardBtn.addEventListener('click', async () => {
+    if (updateCardBtn.disabled) return
+    updateCardBtn.disabled = true
     try {
       await window.faktur?.beginUpdate?.()
     } catch {
-      updatePill.disabled = false
+      updateCardBtn.disabled = false
     }
   })
 }

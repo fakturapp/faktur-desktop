@@ -1,6 +1,6 @@
 {
   "name": "faktur-desktop",
-  "version": "2.1.2",
+  "version": "1.1.2",
   "description": "Client de bureau Faktur — OAuth2 + coffre-fort chiffré",
   "author": {
     "name": "danbenba",
@@ -10,8 +10,8 @@
   "type": "commonjs",
   "license": "MIT",
   "scripts": {
-    "start": "electron .",
-    "start:dev": "cross-env FAKTUR_ENV=development electron .",
+    "start": "node scripts/compile-env.js && electron .",
+    "start:dev": "node scripts/compile-env.js && cross-env FAKTUR_ENV=development electron .",
     "cleanup": "node scripts/cleanup.js",
     "cleanup:all": "node scripts/cleanup.js --dist",
     "cleanup:dry": "node scripts/cleanup.js --dry",

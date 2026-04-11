@@ -180,51 +180,89 @@
       letter-spacing: 0.02em;
     }
 
-    .update-pill {
-      position: relative;
+    /* ---------- Update card ---------- */
+    .update-card {
       display: none;
+      margin-bottom: 14px;
+      padding: 14px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(99, 102, 241, 0.30);
+      background: rgba(99, 102, 241, 0.08);
+      backdrop-filter: blur(8px);
       align-items: center;
-      gap: 8px;
-      margin: 16px 0 0;
-      padding: 8px 14px;
-      border-radius: 999px;
-      background: var(--primary-soft);
-      border: 1px solid var(--primary-ring);
+      gap: 14px;
+      animation: fadeInUp 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+    .update-card.visible { display: flex; }
+    .update-card-icon {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: var(--primary-hover);
-      font-family: inherit;
+    }
+    .update-card-icon svg { width: 18px; height: 18px; }
+    .update-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .update-card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--fg);
+      margin: 0 0 2px;
+      letter-spacing: -0.01em;
+    }
+    .update-card-sub {
       font-size: 11px;
+      color: var(--fg-muted);
+      margin: 0;
+    }
+    .update-card-sub strong { color: var(--primary-hover); font-weight: 600; }
+    .update-card-btn {
+      flex-shrink: 0;
+      height: 34px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      font-family: inherit;
+      font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.005em;
+      letter-spacing: -0.005em;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
       transition: all 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      max-width: 100%;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.30);
+      white-space: nowrap;
     }
-    .update-pill.visible { display: inline-flex; }
-    .update-pill:hover {
-      background: rgba(99, 102, 241, 0.20);
-      border-color: var(--primary);
+    .update-card-btn:hover {
+      background: var(--primary-hover);
       transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.25);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.40);
     }
-    .update-pill:active { transform: translateY(0); }
-    .update-pill:disabled {
+    .update-card-btn:active { transform: translateY(0); }
+    .update-card-btn:disabled {
       opacity: 0.6;
       cursor: default;
       transform: none;
       box-shadow: none;
     }
-    .update-pill-dot {
-      display: inline-block;
+    .update-card-btn-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--primary-hover);
-      box-shadow: 0 0 8px var(--primary-hover);
+      background: rgba(255,255,255,0.7);
+      box-shadow: 0 0 6px rgba(255,255,255,0.5);
       animation: pulseDot 1.6s ease-in-out infinite;
-    }
-    .update-pill-version {
-      color: var(--fg-muted);
-      font-weight: 500;
     }
     @keyframes pulseDot {
       0%, 100% { opacity: 1; transform: scale(1); }
@@ -382,6 +420,28 @@
 </head>
 <body>
   <main>
+    <!-- ---------- Update card ---------- -->
+    <div id="update-card" class="update-card" role="alert">
+      <span class="update-card-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v10m0 0 3-3m-3 3-3-3"/>
+          <path d="M2 17v1a4 4 0 0 0 4 4h12a4 4 0 0 0 4-4v-1"/>
+        </svg>
+      </span>
+      <div class="update-card-body">
+        <p class="update-card-title">Mise à jour disponible</p>
+        <p class="update-card-sub">
+          <span id="update-card-current"></span>
+          <span id="update-card-arrow"></span>
+          <strong id="update-card-version"></strong>
+        </p>
+      </div>
+      <button id="update-card-btn" class="update-card-btn" type="button">
+        <span class="update-card-btn-dot"></span>
+        Télécharger
+      </button>
+    </div>
+
     <!-- ---------- Disconnect banner ---------- -->
     <div id="banner" class="banner" role="alert">
       <span class="dot"></span>
@@ -403,12 +463,6 @@
         <p class="left-tagline">
           Facturation professionnelle, chiffrée de bout en bout.
         </p>
-
-        <button id="update-pill" class="update-pill" type="button">
-          <span class="update-pill-dot"></span>
-          <span>Mise à jour disponible</span>
-          <span id="update-pill-version" class="update-pill-version"></span>
-        </button>
 
         <p class="left-footer">v<span id="app-version">2.1.0</span></p>
       </aside>
