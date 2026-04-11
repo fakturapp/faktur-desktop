@@ -23,7 +23,7 @@
     "build:mac": "node scripts/generate-icon.js && node scripts/compile-env.js && electron-builder --mac",
     "build:linux": "node scripts/generate-icon.js && node scripts/compile-env.js && electron-builder --linux",
     "generate:signing-key": "node scripts/generate-signing-key.js",
-    "test": "node tests/desktop_proof.test.js && node tests/attestation.test.js",
+    "test": "node tests/desktop_proof.test.js && node tests/attestation.test.js && node tests/updater_platform.test.js",
     "lint": "echo \"lint placeholder\""
   },
   "build": {
@@ -68,16 +68,26 @@
       "signAndEditExecutable": true
     },
     "mac": {
-      "target": "dmg",
+      "target": [
+        { "target": "dmg", "arch": "universal" },
+        { "target": "zip", "arch": "universal" }
+      ],
       "icon": "build/icon.png",
-      "hardenedRuntime": true,
+      "category": "public.app-category.business",
+      "hardenedRuntime": false,
       "gatekeeperAssess": false,
+      "identity": null,
       "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "artifactName": "FakturDesktop-mac.${ext}"
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "build/icon.png"
+      "target": [
+        { "target": "AppImage", "arch": "x64" }
+      ],
+      "icon": "build/icon.png",
+      "category": "Office",
+      "artifactName": "FakturDesktop-linux-${arch}.${ext}"
     },
     "protocols": [
       {

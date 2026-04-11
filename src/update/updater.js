@@ -2,12 +2,15 @@
 
 const fs = require('node:fs')
 const path = require('node:path')
-const { spawn } = require('node:child_process')
 const { app, BrowserWindow } = require('electron')
+const {
+  getAssetNameForCurrentPlatform,
+  isPlatformSupported,
+} = require('./assets')
+const installPlatforms = require('./install-platforms')
 
 const GITHUB_LATEST_URL =
   'https://api.github.com/repos/fakturapp/faktur-desktop/releases/latest'
-const INSTALLER_FILENAME = 'FakturDesktop-Installer.exe'
 
 function parseVersion(raw) {
   if (raw == null) return null
@@ -85,6 +88,16 @@ async function checkForUpdate({ silent = false } = {}) {
     console.log('[updater] skipping check — launched with --updated flag (just installed)')
     return null
   }
+  if (!isPlatformSupported()) {
+    if (!silent) {
+      emit({
+        type: 'error',
+        message: `Updates are not supported on platform ${process.platform}`,
+      })
+    }
+    return null
+  }
+  const assetName = getAssetNameForCurrentPlatform()
   try {
     const res = await fetch(GITHUB_LATEST_URL, {
       headers: {
@@ -123,12 +136,12 @@ async function checkForUpdate({ silent = false } = {}) {
       `[updater] update available: v${currentVersion} -> v${remote.parsed.join('.')}`
     )
 
-    const asset = (data.assets || []).find((a) => a.name === INSTALLER_FILENAME)
+    const asset = (data.assets || []).find((a) => a.name === assetName)
     if (!asset) {
       cachedResult = null
       emit({
         type: 'error',
-        message: `Release ${remote.raw} has no ${INSTALLER_FILENAME} asset`,
+        message: `Release ${remote.raw} has no ${assetName} asset`,
       })
       return null
     }
@@ -154,16 +167,19 @@ function getCachedUpdate() {
   return cachedResult
 }
 
-// ---------- Download + launch installer ----------
 async function downloadAndInstall({ onProgress } = {}) {
   if (!cachedResult) {
     throw new Error('No update available — call checkForUpdate first')
   }
+  if (!isPlatformSupported()) {
+    throw new Error(`Updates are not supported on platform ${process.platform}`)
+  }
 
-  const installerPath = path.join(app.getPath('temp'), INSTALLER_FILENAME)
+  const assetName = getAssetNameForCurrentPlatform()
+  const downloadedPath = path.join(app.getPath('temp'), assetName)
 
   try {
-    fs.unlinkSync(installerPath)
+    fs.unlinkSync(downloadedPath)
   } catch {
   }
 
@@ -175,7 +191,7 @@ async function downloadAndInstall({ onProgress } = {}) {
   }
 
   const total = Number(res.headers.get('content-length')) || cachedResult.size || 0
-  const file = fs.createWriteStream(installerPath)
+  const file = fs.createWriteStream(downloadedPath)
   let downloaded = 0
 
   const reader = res.body.getReader()
@@ -198,7 +214,7 @@ async function downloadAndInstall({ onProgress } = {}) {
     await new Promise((resolve) => file.on('close', resolve))
   }
 
-  emit({ type: 'downloaded', path: installerPath })
+  emit({ type: 'downloaded', path: downloadedPath })
 
   if (onProgress) {
     onProgress({ phase: 'installing', percent: 100, total, downloaded })
@@ -211,31 +227,12 @@ async function downloadAndInstall({ onProgress } = {}) {
   } catch {
   }
 
-  const trampolineScript = [
-    '@echo off',
-    'echo Faktur Desktop is updating, please wait...',
-    'timeout /t 2 /nobreak >nul 2>&1',
-    `"${installerPath}"`,
-    'exit /b 0',
-    '',
-  ].join('\r\n')
-
-  const trampolinePath = path.join(
-    app.getPath('temp'),
-    `faktur-updater-${Date.now()}.cmd`
-  )
   try {
-    fs.writeFileSync(trampolinePath, trampolineScript, 'utf8')
+    installPlatforms.installCurrent(downloadedPath)
   } catch (err) {
-    console.error('[updater] failed to write trampoline:', err?.message || err)
+    console.error('[updater] failed to launch platform installer:', err?.message || err)
+    throw err
   }
-
-  const trampolineChild = spawn('cmd.exe', ['/c', trampolinePath], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true,
-  })
-  trampolineChild.unref()
 
   await new Promise((resolve) => setTimeout(resolve, 500))
 
@@ -247,7 +244,7 @@ async function downloadAndInstall({ onProgress } = {}) {
   }
 
   app.exit(0)
-  return { installerPath }
+  return { installerPath: downloadedPath }
 }
 
 module.exports = {
@@ -258,5 +255,4 @@ module.exports = {
   semverGt,
   getCurrentVersion,
   wasJustUpdated,
-  INSTALLER_FILENAME,
 }
