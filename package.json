@@ -1,6 +1,6 @@
 {
   "name": "faktur-desktop",
-  "version": "1.1.2",
+  "version": "2.4.3",
   "description": "Client de bureau Faktur — OAuth2 + coffre-fort chiffré",
   "author": {
     "name": "danbenba",
@@ -69,8 +69,14 @@
     },
     "mac": {
       "target": [
-        { "target": "dmg", "arch": "universal" },
-        { "target": "zip", "arch": "universal" }
+        {
+          "target": "dmg",
+          "arch": "universal"
+        },
+        {
+          "target": "zip",
+          "arch": "universal"
+        }
       ],
       "icon": "build/icon.png",
       "category": "public.app-category.business",
@@ -83,7 +89,10 @@
     },
     "linux": {
       "target": [
-        { "target": "AppImage", "arch": "x64" }
+        {
+          "target": "AppImage",
+          "arch": "x64"
+        }
       ],
       "icon": "build/icon.png",
       "category": "Office",
@@ -92,7 +101,9 @@
     "protocols": [
       {
         "name": "Faktur",
-        "schemes": ["faktur"]
+        "schemes": [
+          "faktur"
+        ]
       }
     ]
   },

@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.4.3] — 2026-04-11
+
+### ✨ Multi-platform build & Updater
+- **Cross-platform updater**. The app now supports in-place auto-updates on Windows (.exe), macOS (.zip), and Linux (.AppImage).
+- **GitHub Actions CI**. Automated build and release pipeline for all three platforms triggered by git tags.
+- **Universal Mac builds**. macOS builds are now universal (x64 + arm64) to support both Intel and Apple Silicon natively.
+- **Linux AppImage support**. Official AppImage target for Linux with automatic permissions management during update.
+- **Modernized Update UI**. Replaced the update pill with a dedicated update card in the login screen, showing current and target versions.
+
 ## [2.1.0] — 2026-04-08
 
 ### Security hardening — P0

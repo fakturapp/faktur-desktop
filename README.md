@@ -111,11 +111,11 @@ Pour signer aussi le binaire comme "officiel" (nécessaire pour que le badge ✓
 
 ## Publier une release
 
-1. Bump la version dans `package.json` (ex : `"version": "2.1.0"`)
+1. Bump la version dans `package.json` (ex : `"version": "2.4.3"`)
 2. `npm run build:win`
 3. Va sur [github.com/fakturapp/faktur-desktop/releases/new](https://github.com/fakturapp/faktur-desktop/releases/new)
-4. **Tag** : `v2.1.0` (le préfixe `v` est optionnel, mais le tag DOIT contenir un numéro de version)
-5. **Title** : `Faktur 2.1.0` (contient aussi le numéro de version — sert de fallback si le tag est mal formé)
+4. **Tag** : `v2.4.3` (le préfixe `v` est optionnel, mais le tag DOIT contenir un numéro de version)
+5. **Title** : `Faktur 2.4.3` (contient aussi le numéro de version — sert de fallback si le tag est mal formé)
 6. Upload `dist/FakturDesktop-Installer.exe` comme asset
 7. Coche **Set as the latest release**
 8. Publie
@@ -130,7 +130,7 @@ L'app interroge l'API GitHub toutes les heures :
 GET https://api.github.com/repos/fakturapp/faktur-desktop/releases/latest
 ```
 
-Si la version distante est supérieure à la version locale ET qu'un asset `FakturDesktop-Installer.exe` existe, une carte "Mise à jour disponible" apparaît dans la sidebar du dashboard. Un clic sur "Relancer maintenant" ferme l'app, télécharge l'installeur dans `%TEMP%` et le lance avec `/S --force-run` (silencieux + relance auto).
+Si la version distante est supérieure à la version locale ET que l'asset correspondant à la plateforme existe (`.exe`, `.zip` ou `.AppImage`), une carte **"Mise à jour disponible"** apparaît dans l'écran de connexion. Un clic sur **"Télécharger"** télécharge l'installeur dans le dossier temporaire et le lance via un script trampoline qui gère le remplacement des fichiers et le redémarrage de l'app.
 
 ## Licence
 

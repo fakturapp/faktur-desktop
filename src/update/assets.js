@@ -3,7 +3,7 @@
 const ASSET_BY_PLATFORM = {
   win32: 'FakturDesktop-Installer.exe',
   darwin: 'FakturDesktop-mac.zip',
-  linux: 'FakturDesktop-linux-x64.AppImage',
+  linux: 'FakturDesktop-linux-x86_64.AppImage',
 }
 
 function getAssetNameForPlatform(platform) {
