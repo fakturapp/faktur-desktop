@@ -4,6 +4,8 @@ const path = require('node:path')
 const { app, BrowserWindow, shell, session } = require('electron')
 const config = require('../config/env')
 const tokenManager = require('../oauth/token_manager')
+const preferences = require('../store/preferences')
+const sessionBridgeState = require('../store/session_bridge_state')
 const { exchangeForDashboardSession } = require('../oauth/session_bridge')
 const { computeDesktopProofHeader } = require('../security/desktop_proof')
 const {
@@ -72,7 +74,6 @@ async function createShellWindow({ onFatalError } = {}) {
     return { action: 'deny' }
   })
 
-  // ---------- Session bridge + dashboard load ----------
   ;(async () => {
     let bridgedSession = null
     try {
@@ -85,33 +86,69 @@ async function createShellWindow({ onFatalError } = {}) {
       return
     }
 
+    if (win.isDestroyed()) return
+
+    sessionBridgeState.set(bridgedSession)
+
+    const prefs = preferences.read()
+    const teams = Array.isArray(bridgedSession.teams) ? bridgedSession.teams : []
+    const lastTeam = prefs.lastTeamId ? teams.find((t) => t.id === prefs.lastTeamId) : null
+    const lastTeamUsable = lastTeam && !lastTeam.locked
+    const shouldPickTeam =
+      teams.length === 0
+        ? false
+        : prefs.alwaysShowTeamSelect || teams.length > 1 || !lastTeamUsable
+
+    if (shouldPickTeam) {
+      const teamSelectPath = path.join(__dirname, '..', '..', 'renderer', 'team-select.html')
+      try {
+        await win.loadFile(teamSelectPath)
+      } catch (err) {
+        console.error('[shell] failed to load team-select:', err?.message || err)
+        setImmediate(() => onFatalError?.('network_error'))
+      }
+      return
+    }
+
     if (bridgedSession.vaultRequired !== false && bridgedSession.vaultLocked) {
       setImmediate(() => onFatalError?.('vault_locked'))
       return
     }
 
-    if (win.isDestroyed()) return
-
-    const sessionPayload = {
-      t: bridgedSession.token,
-      v: bridgedSession.vaultKey,
-      l: !!bridgedSession.vaultLocked,
-      s: 'desktop',
-    }
-    const encoded = Buffer.from(JSON.stringify(sessionPayload), 'utf8').toString('base64url')
-    const target = `${config.urls.dashboard.replace(/\/+$/, '')}/dashboard#faktur_desktop_session=${encoded}`
-
-    try {
-      await win.loadURL(target)
-    } catch (err) {
-      const msg = err?.message || String(err)
-      if (msg.includes('ERR_ABORTED') || msg.includes('(-3)')) return
-      console.error('[shell] failed to load dashboard:', msg)
-      setImmediate(() => onFatalError?.('network_error'))
-    }
+    await loadDashboardForTeam(win, bridgedSession, prefs.lastTeamId, onFatalError)
   })()
 
   return win
+}
+
+async function loadDashboardForTeam(win, bridgedSession, teamId, onFatalError) {
+  const sessionPayload = {
+    t: bridgedSession.token,
+    v: bridgedSession.vaultKey,
+    l: !!bridgedSession.vaultLocked,
+    s: 'desktop',
+    team: teamId || null,
+  }
+  const encoded = Buffer.from(JSON.stringify(sessionPayload), 'utf8').toString('base64url')
+  const target = `${config.urls.dashboard.replace(/\/+$/, '')}/dashboard#faktur_desktop_session=${encoded}`
+
+  try {
+    await win.loadURL(target)
+  } catch (err) {
+    const msg = err?.message || String(err)
+    if (msg.includes('ERR_ABORTED') || msg.includes('(-3)')) return
+    console.error('[shell] failed to load dashboard:', msg)
+    setImmediate(() => onFatalError?.('network_error'))
+  }
+}
+
+async function loadDashboardFromSelection(win, teamId, onFatalError) {
+  const bridgedSession = sessionBridgeState.get()
+  if (!bridgedSession) {
+    setImmediate(() => onFatalError?.('bridge_failed'))
+    return
+  }
+  await loadDashboardForTeam(win, bridgedSession, teamId, onFatalError)
 }
 
 // ---------- Navigation guard ----------
@@ -189,4 +226,4 @@ function installPermissionBlocker(sessionInstance) {
   })
 }
 
-module.exports = { createShellWindow, SHELL_PARTITION }
+module.exports = { createShellWindow, loadDashboardFromSelection, SHELL_PARTITION }
