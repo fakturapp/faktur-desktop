@@ -9,6 +9,23 @@ Client de bureau Electron pour [Faktur](https://fakturapp.cc). Authentification 
 
 > Faktur Desktop n'est pas un logiciel séparé : c'est le dashboard Faktur embarqué dans une fenêtre native, avec tous les avantages d'une app de bureau (auto-update, icône dans la barre des tâches, raccourci clavier) et sans compromettre la sécurité zero-access du coffre-fort.
 
+---
+
+> [!IMPORTANT]
+> **Utilisateurs macOS & Linux**
+>
+> **Si vous êtes sur Mac**, l'application affichera une erreur au premier lancement. Pour la débloquer, ouvrez votre **Terminal** et exécutez ces deux commandes :
+> ```bash
+> xattr -d com.apple.quarantine "/Applications/Faktur Desktop.app"
+> codesign --force --deep --sign - "/Applications/Faktur Desktop.app"
+> ```
+>
+> **Si vous êtes sur Linux**, n'oubliez pas de rendre l'AppImage exécutable :
+> `chmod +x FakturDesktop-linux-x86_64.AppImage`
+
+
+---
+
 ## Pourquoi une app de bureau
 
 - **Sessions longue durée** — les jetons OAuth2 sont conservés dans le Keychain macOS, DPAPI Windows ou libsecret Linux, pas dans un cookie de navigateur qui peut disparaître
