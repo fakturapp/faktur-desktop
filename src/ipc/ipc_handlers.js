@@ -129,9 +129,24 @@ function registerIpcHandlers({ onSessionChange, onUpdateBegin, onTeamSelected })
   ipcMain.handle(ipc.SESSION_GET_BRIDGE, () => {
     const bridged = sessionBridgeState.get()
     if (!bridged) return null
+    const rawUser = bridged.user || {}
+    const teamsArr = Array.isArray(bridged.teams) ? bridged.teams : []
     return {
-      user: bridged.user,
-      teams: Array.isArray(bridged.teams) ? bridged.teams : [],
+      user: {
+        id: rawUser.id ?? null,
+        fullName: rawUser.fullName ?? rawUser.full_name ?? null,
+        email: rawUser.email ?? null,
+        avatarUrl: rawUser.avatarUrl ?? rawUser.avatar_url ?? null,
+        initials: rawUser.initials ?? null,
+      },
+      teams: teamsArr.map((t) => ({
+        id: String(t.id ?? ''),
+        name: String(t.name ?? ''),
+        iconUrl: t.iconUrl ?? t.icon_url ?? null,
+        encryptionMode: t.encryptionMode ?? t.encryption_mode ?? 'standard',
+        locked: !!t.locked,
+        role: t.role ?? null,
+      })),
       vaultLocked: !!bridged.vaultLocked,
       vaultRequired: !!bridged.vaultRequired,
       currentTeamEncryptionMode: bridged.currentTeamEncryptionMode ?? null,
