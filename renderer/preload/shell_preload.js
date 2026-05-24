@@ -36,4 +36,10 @@ contextBridge.exposeInMainWorld('fakturDesktop', {
     ipcRenderer.on('session:state-changed', handler)
     return () => ipcRenderer.removeListener('session:state-changed', handler)
   },
+
+  getBridge: () => ipcRenderer.invoke('session:get-bridge'),
+  getPrefs: () => ipcRenderer.invoke('prefs:get'),
+  setPrefs: (patch) => ipcRenderer.invoke('prefs:set', patch),
+  selectTeam: (payload) => ipcRenderer.invoke('session:select-team', payload),
+  requestVaultUnlock: (payload) => ipcRenderer.invoke('vault:request-unlock', payload || {}),
 })
