@@ -12,6 +12,9 @@ const elUserAvatar = document.getElementById('user-avatar')
 const elUserFullName = document.getElementById('user-fullname')
 const elUserEmail = document.getElementById('user-email')
 const elLogout = document.getElementById('logout')
+const elLaunch = document.getElementById('launch')
+const elLaunchTitle = document.getElementById('launch-title')
+const elLaunchSub = document.getElementById('launch-sub')
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
@@ -52,6 +55,13 @@ function clearError() {
   elErr.classList.remove('visible')
 }
 
+function showLaunch(team) {
+  elLaunchTitle.textContent = 'Chargement de votre espace'
+  elLaunchSub.textContent = team?.name ? `Connexion à « ${team.name} »…` : 'Connexion à Faktur…'
+  elLaunch.classList.add('visible')
+  elLaunch.setAttribute('aria-hidden', 'false')
+}
+
 function initialsFor(name) {
   if (!name) return '?'
   const parts = name.trim().split(/\s+/)
@@ -61,16 +71,17 @@ function initialsFor(name) {
 
 function renderUser(user) {
   if (!user) return
-  elUserFullName.textContent = user.fullName || user.email || 'Utilisateur'
-  elUserEmail.textContent = user.email || ''
+  const display = user.fullName || user.email || 'Utilisateur'
+  elUserFullName.textContent = display
+  elUserEmail.textContent = user.email && user.email !== display ? user.email : ''
   if (user.avatarUrl) {
     const img = document.createElement('img')
     img.src = user.avatarUrl
-    img.alt = user.fullName || user.email || ''
+    img.alt = display
     elUserAvatar.textContent = ''
     elUserAvatar.appendChild(img)
   } else {
-    elUserAvatar.textContent = initialsFor(user.fullName || user.email || '?')
+    elUserAvatar.textContent = user.initials || initialsFor(display)
   }
   elUserRow.hidden = false
 }
@@ -119,7 +130,7 @@ function renderTeams(teams) {
       lockBadge.className = 'badge locked'
       lockBadge.appendChild(lockIcon())
       const lockText = document.createElement('span')
-      lockText.textContent = ' Verrouillé'
+      lockText.textContent = 'Verrouillé'
       lockBadge.appendChild(lockText)
       meta.appendChild(lockBadge)
     }
@@ -137,6 +148,10 @@ function renderTeams(teams) {
   elTeams.hidden = false
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 async function onTeamClick(team, node) {
   clearError()
   if (team.locked) {
@@ -149,18 +164,26 @@ async function onTeamClick(team, node) {
   }
   for (const el of document.querySelectorAll('.team')) el.style.pointerEvents = 'none'
   node.style.opacity = '0.6'
+  showLaunch(team)
   try {
-    const res = await f.selectTeam({
-      teamId: team.id,
-      persistAsDefault: true,
-      alwaysShowTeamSelect: !!elAlwaysShow.checked,
-    })
+    const [res] = await Promise.all([
+      f.selectTeam({
+        teamId: team.id,
+        persistAsDefault: true,
+        alwaysShowTeamSelect: !!elAlwaysShow.checked,
+      }),
+      wait(1000),
+    ])
     if (!res?.ok) {
+      elLaunch.classList.remove('visible')
+      elLaunch.setAttribute('aria-hidden', 'true')
       showError(res?.error || 'Impossible de sélectionner cette équipe.')
       for (const el of document.querySelectorAll('.team')) el.style.pointerEvents = ''
       node.style.opacity = ''
     }
   } catch (err) {
+    elLaunch.classList.remove('visible')
+    elLaunch.setAttribute('aria-hidden', 'true')
     showError(err?.message || 'Erreur inattendue')
     for (const el of document.querySelectorAll('.team')) el.style.pointerEvents = ''
     node.style.opacity = ''
