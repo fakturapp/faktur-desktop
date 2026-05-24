@@ -20,6 +20,11 @@ module.exports = Object.freeze({
     UPDATE_GET_INFO: 'update:get-info',
     UPDATE_START_DOWNLOAD: 'update:start-download',
     UPDATE_PROGRESS: 'update:progress',
+    PREFS_GET: 'prefs:get',
+    PREFS_SET: 'prefs:set',
+    SESSION_GET_BRIDGE: 'session:get-bridge',
+    SESSION_SELECT_TEAM: 'session:select-team',
+    VAULT_REQUEST_UNLOCK: 'vault:request-unlock',
   },
 
   session: {
