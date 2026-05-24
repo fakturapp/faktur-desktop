@@ -6,8 +6,10 @@ const tokenManager = require('../oauth/token_manager')
 const updater = require('../update/updater')
 const attestation = require('../security/attestation')
 const config = require('../config/env')
+const preferences = require('../store/preferences')
+const sessionBridgeState = require('../store/session_bridge_state')
 
-function registerIpcHandlers({ onSessionChange, onUpdateBegin }) {
+function registerIpcHandlers({ onSessionChange, onUpdateBegin, onTeamSelected }) {
   const { ipc } = constants
 
   ipcMain.handle(ipc.SESSION_GET_STATE, () => {
@@ -108,7 +110,60 @@ function registerIpcHandlers({ onSessionChange, onUpdateBegin }) {
     }
   })
 
-  // ---------- Session forwarder ----------
+  ipcMain.handle(ipc.PREFS_GET, () => {
+    return preferences.read()
+  })
+
+  ipcMain.handle(ipc.PREFS_SET, (_event, patch) => {
+    if (!patch || typeof patch !== 'object') return preferences.read()
+    const allowed = {}
+    if (typeof patch.alwaysShowTeamSelect === 'boolean') {
+      allowed.alwaysShowTeamSelect = patch.alwaysShowTeamSelect
+    }
+    if (patch.lastTeamId === null || typeof patch.lastTeamId === 'string') {
+      allowed.lastTeamId = patch.lastTeamId
+    }
+    return preferences.write(allowed)
+  })
+
+  ipcMain.handle(ipc.SESSION_GET_BRIDGE, () => {
+    const bridged = sessionBridgeState.get()
+    if (!bridged) return null
+    return {
+      user: bridged.user,
+      teams: Array.isArray(bridged.teams) ? bridged.teams : [],
+      vaultLocked: !!bridged.vaultLocked,
+      vaultRequired: !!bridged.vaultRequired,
+      currentTeamEncryptionMode: bridged.currentTeamEncryptionMode ?? null,
+      allUnlockedOrStandard: bridged.allUnlockedOrStandard !== false,
+    }
+  })
+
+  ipcMain.handle(ipc.SESSION_SELECT_TEAM, async (_event, opts) => {
+    if (!opts || typeof opts !== 'object') return { ok: false, error: 'invalid_payload' }
+    const teamId = typeof opts.teamId === 'string' ? opts.teamId : null
+    if (!teamId) return { ok: false, error: 'missing_team_id' }
+    const persist = !!opts.persistAsDefault
+    sessionBridgeState.setSelectedTeamId(teamId)
+    if (typeof opts.alwaysShowTeamSelect === 'boolean') {
+      preferences.write({ alwaysShowTeamSelect: opts.alwaysShowTeamSelect })
+    }
+    if (persist) preferences.write({ lastTeamId: teamId })
+    if (typeof onTeamSelected === 'function') {
+      await onTeamSelected({ teamId })
+    }
+    return { ok: true }
+  })
+
+  ipcMain.handle(ipc.VAULT_REQUEST_UNLOCK, async (_event, opts) => {
+    const teamId = opts && typeof opts.teamId === 'string' ? opts.teamId : null
+    const params = new URLSearchParams({ source: 'desktop' })
+    if (teamId) params.set('team', teamId)
+    const url = `${config.urls.dashboard}/vault/unlock?${params.toString()}`
+    await shell.openExternal(url).catch(() => {})
+    return { ok: true }
+  })
+
   tokenManager.onStateChange((payload) => {
     onSessionChange?.(payload)
   })
