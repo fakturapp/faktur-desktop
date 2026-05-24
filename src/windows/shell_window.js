@@ -85,7 +85,7 @@ async function createShellWindow({ onFatalError } = {}) {
       return
     }
 
-    if (bridgedSession.vaultLocked) {
+    if (bridgedSession.vaultRequired !== false && bridgedSession.vaultLocked) {
       setImmediate(() => onFatalError?.('vault_locked'))
       return
     }
