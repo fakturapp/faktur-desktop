@@ -16,7 +16,7 @@ const constants = require('../config/constants')
 const tokenManager = require('../oauth/token_manager')
 const updater = require('../update/updater')
 const { createLoginWindow } = require('../windows/login_window')
-const { createShellWindow } = require('../windows/shell_window')
+const { createShellWindow, loadDashboardFromSelection } = require('../windows/shell_window')
 const { createUpdateWindow } = require('../windows/update_window')
 const { registerIpcHandlers } = require('../ipc/ipc_handlers')
 const {
@@ -181,6 +181,17 @@ async function bootstrap() {
       }
     },
     onUpdateBegin: beginUpdate,
+    onTeamSelected: async ({ teamId }) => {
+      if (!currentWindow || currentWindow.isDestroyed()) return
+      await loadDashboardFromSelection(currentWindow, teamId, async (reason) => {
+        if (reason === 'session_expired' || reason === 'network_error') {
+          await openForState(constants.session.AUTHENTICATED)
+          return
+        }
+        lastLogoutReason = reason
+        await tokenManager.logout({ remoteRevoke: false, reason })
+      })
+    },
   })
 
   const initial = tokenManager.bootstrap()
