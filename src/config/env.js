@@ -112,7 +112,7 @@ const config = Object.freeze({
 
   api: {
     baseUrl: optional('FAKTUR_API_BASE_URL', 'https://api.fakturapp.cc'),
-    prefix: optional('FAKTUR_API_PREFIX', '/api/v1'),
+    prefix: optional('FAKTUR_API_PREFIX', '/v1'),
   },
 
   urls: {
