@@ -56,21 +56,33 @@
       position: relative;
     }
 
-    body::before {
-      content: '';
-      position: absolute;
+    .veil-canvas {
+      position: fixed;
       inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      display: block;
+    }
+    .veil-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
       background:
         radial-gradient(ellipse at 8% 8%, rgba(99, 102, 241, 0.10) 0%, transparent 45%),
-        radial-gradient(ellipse at 92% 92%, rgba(139, 92, 246, 0.07) 0%, transparent 45%);
-      pointer-events: none;
+        radial-gradient(ellipse at 92% 92%, rgba(139, 92, 246, 0.07) 0%, transparent 45%),
+        rgba(8, 8, 8, 0.55);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
     }
 
     main {
       position: relative;
       width: 100%;
       max-width: 780px;
-      z-index: 1;
+      z-index: 2;
       opacity: 1;
     }
 
@@ -118,19 +130,21 @@
       min-height: 420px;
       border-radius: 24px;
       overflow: hidden;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
+      background: rgba(20, 20, 20, 0.78);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.02);
+        0 30px 80px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.03);
     }
 
     /* ---------- Left panel — brand ---------- */
     .left {
       position: relative;
       padding: 48px 40px;
-      background: var(--bg-left);
-      border-right: 1px solid var(--border-soft);
+      background: rgba(13, 13, 15, 0.55);
+      border-right: 1px solid rgba(255, 255, 255, 0.04);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -419,6 +433,9 @@
   </style>
 </head>
 <body>
+  <canvas id="darkveil" class="veil-canvas" aria-hidden="true"></canvas>
+  <div class="veil-overlay" aria-hidden="true"></div>
+
   <main>
     <!-- ---------- Update card ---------- -->
     <div id="update-card" class="update-card" role="alert">
@@ -492,6 +509,7 @@
     </div>
   </main>
 
+  <script src="./js/darkveil.js"></script>
   <script src="./js/login.js"></script>
 </body>
 </html>
