@@ -104,7 +104,9 @@ async function createShellWindow({ onFatalError } = {}) {
       try {
         await win.loadFile(teamSelectPath)
       } catch (err) {
-        console.error('[shell] failed to load team-select:', err?.message || err)
+        const msg = err?.message || String(err)
+        if (msg.includes('ERR_ABORTED') || msg.includes('(-3)')) return
+        console.error('[shell] failed to load team-select:', msg)
         setImmediate(() => onFatalError?.('network_error'))
       }
       return
